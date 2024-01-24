@@ -10,12 +10,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sample {
-  id        Int      @id @default(autoincrement())
-  name      String
-  code      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model User {
+  user_id         Int       @id @default(autoincrement())
+  username        String
+  password        String
+  email           String    @unique
+  role            String    @default("user")
+  referral_number String    @unique
+  points          Point[]
+  voucher         Voucher[]
+  event           Event[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
 
-  @@map("samples") // if you want to use snake_case format
+model Point {
+  id          Int      @id @default(autoincrement())
+  expiredDate DateTime
+  User        User?    @relation(fields: [userUser_id], references: [user_id])
+  userUser_id Int?
+}
+
+model Voucher {
+  id          Int      @id @default(autoincrement())
+  expiredDate DateTime
+  User        User?    @relation(fields: [userUser_id], references: [user_id])
+  userUser_id Int?
+}
+
+model Event {
+  id               Int          @id @default(autoincrement())
+  title            String
+  eventDescription String
+  price            Float
+  eventDate        DateTime
+  eventLocation    String
+  seatCount        Int
+  ticketTier       TicketTier[]
+  User             User?        @relation(fields: [userUser_id], references: [user_id])
+  userUser_id      Int?
+}
+
+model TicketTier {
+  id       Int    @id @default(autoincrement())
+  tierName String
+  discount Float
+  Event    Event? @relation(fields: [eventId], references: [id])
+  eventId  Int?
 }
