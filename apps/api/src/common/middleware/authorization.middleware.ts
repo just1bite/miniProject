@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 
 export default async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Asumsi: req.user.id mengandung ID pengguna yang diambil dari token atau sesi
+    // login diambil dari cookie
     const cookie = req.cookies;
     if (!cookie) {
       return res.status(400).json({
@@ -41,7 +41,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
-    // Asumsi: peran admin disimpan dalam kolom 'role' dan nilainya adalah 'admin'
+    // jika ada user admin lalu ke next function
     const isAdmin = user?.role === 'admin';
 
     if (!isAdmin) {
