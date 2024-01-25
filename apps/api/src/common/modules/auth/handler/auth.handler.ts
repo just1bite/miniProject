@@ -25,9 +25,9 @@ export const signinUser = async (req: Request, res: Response) => {
       });
     }
     const token = generateToken({
-      id: user.user_id,
+      id: user.id,
       email: user.email,
-      user: user.username,
+      username: user.username,
       role: user.role,
     });
     res.status(200).cookie('api-token', token, {
@@ -123,13 +123,13 @@ export const signupUser = async (req: Request, res: Response) => {
         });
         const point = await prisma.point.create({
           data: {
-            userUser_id: authorReferral?.user_id,
+            userId: authorReferral?.id,
             expiredDate: dayjs().add(90, 'day').toDate(),
           },
         });
         const voucher = await prisma.voucher.create({
           data: {
-            userUser_id: createUser.user_id,
+            userId: createUser.id,
             expiredDate: dayjs().add(90, 'day').toDate(),
           },
         });

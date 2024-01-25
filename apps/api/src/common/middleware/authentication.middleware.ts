@@ -28,8 +28,8 @@ export default async (req: any, res: Response, next: NextFunction) => {
     });
   }
 
-  const { user_id, username, email, role } = verifyTokenResult.data;
-  req.userId = user_id;
+  const { id, username, email, role } = verifyTokenResult.data;
+  req.userId = id;
   req.username = username;
   req.userEmail = email;
   req.isAdmin = role === 'admin';

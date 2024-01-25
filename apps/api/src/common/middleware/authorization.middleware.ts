@@ -37,7 +37,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
     // Mengambil data pengguna dari database menggunakan Prisma
     const user = await prisma.user.findUnique({
       where: {
-        user_id: userId,
+        id: userId,
       },
     });
 

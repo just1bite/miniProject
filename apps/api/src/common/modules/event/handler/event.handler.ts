@@ -11,7 +11,7 @@ export interface eventPayload {
   eventDate: Date;
   eventLocation: string;
   seatCount: number;
-  userUser_id: number;
+  userId: number;
 }
 
 export interface patchEventPayload {
@@ -23,7 +23,6 @@ export interface patchEventPayload {
   seatCount?: number;
   ticketTier?: string;
 }
-
 
 export const eventPayload = object({
   body: object({
@@ -79,7 +78,7 @@ export const createEvent = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-    }: eventPayload  = req.body;
+    }: eventPayload = req.body;
     if (
       !title ||
       !eventDescription ||
@@ -102,7 +101,7 @@ export const createEvent = async (req: Request, res: Response) => {
         eventDate,
         eventLocation,
         seatCount,
-        userUser_id: userId,
+        userId: userId,
       },
     });
 
@@ -137,7 +136,7 @@ export const createTicketTier = async (req: Request, res: Response) => {
     const { id } = verifiedToken.data;
     const userWithId = await prisma.user.findUnique({
       where: {
-        user_id: id,
+        id: id,
       },
     });
     if (!userWithId) {
@@ -224,7 +223,7 @@ export const getEventById = async (req: Request, res: Response) => {
     const userArticle = await prisma.event.findFirst({
       where: {
         id: parsedId,
-        userUser_id: parsedId,
+        userId: parsedId,
       },
     });
 
@@ -251,7 +250,6 @@ export const getEventById = async (req: Request, res: Response) => {
 
 export const patchEventById = async (req: Request, res: Response) => {
   try {
-    const { userUser_id } = req.params;
     const { id } = req.params;
     const {
       title,
@@ -263,16 +261,6 @@ export const patchEventById = async (req: Request, res: Response) => {
       ticketTier,
     } = req.body;
 
-    const patchEventPayload = {
-      title,
-      eventDescription,
-      price,
-      eventDate,
-      eventLocation,
-      seatCount,
-      ticketTier,
-    };
-
     const parsedId = parseInt(id);
     if (!parsedId || isNaN(parsedId)) {
       return res.status(400).json({
@@ -284,7 +272,7 @@ export const patchEventById = async (req: Request, res: Response) => {
     const userEvent = await prisma.event.findFirst({
       where: {
         id: parsedId,
-        userUser_id: parsedId,
+        userId: parsedId,
       },
     });
 
@@ -294,6 +282,16 @@ export const patchEventById = async (req: Request, res: Response) => {
         message: `Event with id ${parsedId} not found`,
       });
     }
+
+    const patchEventPayload = {
+      title,
+      eventDescription,
+      price,
+      eventDate,
+      eventLocation,
+      seatCount,
+      ticketTier,
+    };
 
     const patchedEvent = await prisma.event.update({
       where: {
@@ -305,10 +303,10 @@ export const patchEventById = async (req: Request, res: Response) => {
     return res.status(200).json({
       code: 200,
       message: 'Success',
-      data: patchEventPayload,
+      data: patchedEvent,
     });
   } catch (error: any) {
-    console.log('@@@ getArticles error :', error.message || error);
+    console.log('@@@ patchEventById error:', error.message || error);
     return res.status(500).json({
       code: 500,
       message: 'Internal Server Error',
@@ -318,7 +316,6 @@ export const patchEventById = async (req: Request, res: Response) => {
 
 export const deleteEventById = async (req: Request, res: Response) => {
   try {
-    const { userUser_id } = req.params;
     const { id } = req.params;
 
     const parsedId = parseInt(id);
@@ -332,16 +329,18 @@ export const deleteEventById = async (req: Request, res: Response) => {
     const userEvent = await prisma.event.findFirst({
       where: {
         id: parsedId,
-        userUser_id: parsedId,
+        // Add any additional conditions if needed
       },
     });
 
     if (!userEvent) {
       return res.status(404).json({
         code: 404,
-        message: `Article with id ${parsedId} not found`,
+        message: `Event with id ${parsedId} not found`,
       });
     }
+
+    // Perform additional authorization checks if necessary
 
     await prisma.event.delete({
       where: {
@@ -354,10 +353,123 @@ export const deleteEventById = async (req: Request, res: Response) => {
       message: 'Success',
     });
   } catch (error: any) {
-    console.log('@@@ getArticles error :', error.message || error);
+    console.log('@@@ deleteEventById error:', error.message || error);
     return res.status(500).json({
       code: 500,
       message: 'Internal Server Error',
     });
   }
 };
+
+// export const deleteEventById = async (req: Request, res: Response) => {
+//   try {
+//     const { userUser_id } = req.params;
+//     const { id } = req.params;
+
+//     const parsedId = parseInt(id);
+//     if (!parsedId || isNaN(parsedId)) {
+//       return res.status(400).json({
+//         code: 400,
+//         message: 'Invalid ID params',
+//       });
+//     }
+
+//     const userEvent = await prisma.event.findFirst({
+//       where: {
+//         id: parsedId,
+//         userUser_id: parsedId,
+//       },
+//     });
+
+//     if (!userEvent) {
+//       return res.status(404).json({
+//         code: 404,
+//         message: `Article with id ${parsedId} not found`,
+//       });
+//     }
+
+//     await prisma.event.delete({
+//       where: {
+//         id: parsedId,
+//       },
+//     });
+
+//     return res.status(200).json({
+//       code: 200,
+//       message: 'Success',
+//     });
+//   } catch (error: any) {
+//     console.log('@@@ getArticles error :', error.message || error);
+//     return res.status(500).json({
+//       code: 500,
+//       message: 'Internal Server Error',
+//     });
+//   }
+// };
+
+// export const patchEventById = async (req: Request, res: Response) => {
+//   try {
+//     const { userUser_id } = req.params;
+//     const { id } = req.params;
+//     const {
+//       title,
+//       eventDescription,
+//       price,
+//       eventDate,
+//       eventLocation,
+//       seatCount,
+//       ticketTier,
+//     } = req.body;
+
+//     const patchEventPayload = {
+//       title,
+//       eventDescription,
+//       price,
+//       eventDate,
+//       eventLocation,
+//       seatCount,
+//       ticketTier,
+//     };
+
+//     const parsedId = parseInt(id);
+//     if (!parsedId || isNaN(parsedId)) {
+//       return res.status(400).json({
+//         code: 400,
+//         message: 'Invalid ID params',
+//       });
+//     }
+
+//     const userEvent = await prisma.event.findFirst({
+//       where: {
+//         id: parsedId,
+//         userUser_id: parsedId,
+//       },
+//     });
+
+//     if (!userEvent) {
+//       return res.status(404).json({
+//         code: 404,
+//         message: `Event with id ${parsedId} not found`,
+//       });
+//     }
+
+//     const patchedEvent = await prisma.event.update({
+//       where: {
+//         id: parsedId,
+//       },
+//       data: patchEventPayload,
+//     });
+
+//     return res.status(200).json({
+//       code: 200,
+//       message: 'Success',
+//       data: patchEventPayload,
+//     });
+//   } catch (error: any) {
+//     console.log('@@@ getArticles error :', error.message || error);
+//     return res.status(500).json({
+//       code: 500,
+//       message: 'Internal Server Error',
+//     });
+//   }
+// };

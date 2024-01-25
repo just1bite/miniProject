@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-  user_id         Int       @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   username        String
   password        String
   email           String    @unique
@@ -27,15 +27,17 @@ model User {
 model Point {
   id          Int      @id @default(autoincrement())
   expiredDate DateTime
-  User        User?    @relation(fields: [userUser_id], references: [user_id])
-  userUser_id Int?
+  pointId     Int?
+  User        User?    @relation(fields: [userId], references: [id])
+  userId      Int?
 }
 
 model Voucher {
   id          Int      @id @default(autoincrement())
   expiredDate DateTime
-  User        User?    @relation(fields: [userUser_id], references: [user_id])
-  userUser_id Int?
+  voucherId   Int?
+  User        User?    @relation(fields: [userId], references: [id])
+  userId      Int?
 }
 
 model Event {
@@ -47,8 +49,9 @@ model Event {
   eventLocation    String
   seatCount        Int
   ticketTier       TicketTier[]
-  User             User?        @relation(fields: [userUser_id], references: [user_id])
-  userUser_id      Int?
+  rating           Rating[]
+  User             User?        @relation(fields: [userId], references: [id])
+  userId           Int?
 }
 
 model TicketTier {
@@ -57,4 +60,20 @@ model TicketTier {
   discount Float
   Event    Event? @relation(fields: [eventId], references: [id])
   eventId  Int?
+}
+
+model Rating {
+  id       Int    @id @default(autoincrement())
+  review   String
+  rating   Int
+  reviewBy String
+  Event    Event? @relation(fields: [eventId], references: [id])
+  eventId  Int?
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  purchasedBy String
+  date        DateTime
+  ticketId    Int
 }
