@@ -52,6 +52,7 @@ model Event {
   rating           Rating[]
   User             User?        @relation(fields: [userId], references: [id])
   userId           Int?
+  promotions       Promotion[]
 }
 
 model TicketTier {
@@ -60,6 +61,7 @@ model TicketTier {
   discount Float
   Event    Event? @relation(fields: [eventId], references: [id])
   eventId  Int?
+
 }
 
 model Rating {
@@ -76,4 +78,15 @@ model Transaction {
   purchasedBy String
   date        DateTime
   ticketId    Int
+}
+
+model Promotion{
+  id          Int     @id @default(autoincrement())
+  eventId     Int
+  discountVoucher String
+  maxUsage    Int?
+  referralDiscount  Int?
+  startDate DateTime?
+  endDate DateTime?
+  event   Event @relation(fields: [eventId], references: [id])
 }

@@ -48,7 +48,6 @@ export const addRatingAndReview = async (req: Request, res: Response) => {
       });
     }
 
-    // console.log(verifiedToken.data.username);
 
     // Tambahkan rating dan review ke database
     const newRating = await prisma.rating.create({

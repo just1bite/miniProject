@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  applyReferralDiscount,
   createEvent,
   createTicketTier,
   deleteEventById,
@@ -7,6 +8,7 @@ import {
   getEvent,
   getEventById,
   patchEventById,
+  redeemPoints,
 } from '../handler/event.handler';
 import { inputValidator } from '@/common/helper/validator.helper';
 import authorizationMiddleware from '@/common/middleware/authorization.middleware';
@@ -27,5 +29,7 @@ eventRouter.patch('/update/:id', authorizationMiddleware, patchEventById);
 eventRouter.delete('/delete/:id', authorizationMiddleware, deleteEventById);
 eventRouter.post('/:eventId', authorizationMiddleware, createTicketTier);
 eventRouter.post('/:eventid/rating', addRatingAndReview);
+eventRouter.post('/:eventid/referral', applyReferralDiscount);
+eventRouter.post('/:eventid/redeem', redeemPoints);
 
 export default eventRouter;
