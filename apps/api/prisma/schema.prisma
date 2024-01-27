@@ -48,20 +48,19 @@ model Event {
   eventDate        DateTime
   eventLocation    String
   seatCount        Int
-  ticketTier       TicketTier[]
+  ticketType       TicketType[]
   rating           Rating[]
   User             User?        @relation(fields: [userId], references: [id])
   userId           Int?
   promotions       Promotion[]
 }
 
-model TicketTier {
-  id       Int    @id @default(autoincrement())
-  tierName String
-  discount Float
-  Event    Event? @relation(fields: [eventId], references: [id])
-  eventId  Int?
-
+model TicketType {
+  id         Int    @id @default(autoincrement())
+  ticketName String
+  discount   Float
+  Event      Event? @relation(fields: [eventId], references: [id])
+  eventId    Int?
 }
 
 model Rating {
@@ -80,13 +79,13 @@ model Transaction {
   ticketId    Int
 }
 
-model Promotion{
-  id          Int     @id @default(autoincrement())
-  eventId     Int
-  discountVoucher String
-  maxUsage    Int?
-  referralDiscount  Int?
-  startDate DateTime?
-  endDate DateTime?
-  event   Event @relation(fields: [eventId], references: [id])
+model Promotion {
+  id               Int       @id @default(autoincrement())
+  eventId          Int
+  discountVoucher  String
+  maxUsage         Int?
+  referralDiscount Int?
+  startDate        DateTime?
+  endDate          DateTime?
+  event            Event     @relation(fields: [eventId], references: [id])
 }

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import {
   applyReferralDiscount,
   createEvent,
-  createTicketTier,
+  createTicketType,
   deleteEventById,
   eventPayload,
   getEvent,
@@ -23,11 +23,11 @@ eventRouter.post(
   createEvent,
 );
 
-eventRouter.get('/', authorizationMiddleware, getEvent);
+eventRouter.get('/', getEvent);
 eventRouter.get('/:id', authorizationMiddleware, getEventById);
 eventRouter.patch('/update/:id', authorizationMiddleware, patchEventById);
 eventRouter.delete('/delete/:id', authorizationMiddleware, deleteEventById);
-eventRouter.post('/:eventId', authorizationMiddleware, createTicketTier);
+eventRouter.post('/:eventid', authorizationMiddleware, createTicketType);
 eventRouter.post('/:eventid/rating', addRatingAndReview);
 eventRouter.post('/:eventid/referral', applyReferralDiscount);
 eventRouter.post('/:eventid/redeem', redeemPoints);

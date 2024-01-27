@@ -53,6 +53,7 @@ export interface signupPayload {
   password: string;
   username: string;
   referralCode?: string;
+  role?: string;
 }
 
 export const signUpSchema = object({
@@ -70,7 +71,8 @@ export const signUpSchema = object({
 });
 export const signupUser = async (req: Request, res: Response) => {
   try {
-    const { email, password, username, referralCode }: signupPayload = req.body;
+    const { email, password, username, referralCode, role }: signupPayload =
+      req.body;
 
     const hashedPassword = hash(password);
 
@@ -93,6 +95,7 @@ export const signupUser = async (req: Request, res: Response) => {
           password: hashedPassword,
           username,
           referral_number: userReferral,
+          role,
         },
       });
       return res.status(200).json({
@@ -119,6 +122,7 @@ export const signupUser = async (req: Request, res: Response) => {
             password: hashedPassword,
             username,
             referral_number: userReferral,
+            role,
           },
         });
         const point = await prisma.point.create({

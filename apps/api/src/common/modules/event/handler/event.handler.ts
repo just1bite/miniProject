@@ -14,7 +14,7 @@ export interface eventPayload {
   seatCount: number;
   userId: number;
   isFree: boolean;
-  // ticketTypes: string;
+  // ticketName: string;
 }
 
 export interface patchEventPayload {
@@ -24,7 +24,7 @@ export interface patchEventPayload {
   eventDate?: Date;
   eventLocation?: string;
   seatCount?: number;
-  ticketTier?: string;
+  tiketType?: string;
 }
 
 export interface PromotionCreateInput {
@@ -143,11 +143,11 @@ export const createEvent = async (req: Request, res: Response) => {
   }
 };
 
-export const createTicketTier = async (req: Request, res: Response) => {
+export const createTicketType = async (req: Request, res: Response) => {
   try {
     const { eventId } = req.params;
     const token: string = req.cookies['api-token'];
-    const { tierName, discount } = req.body;
+    const { ticketName, discount } = req.body;
 
     if (!token) {
       return res.status(401).json({
@@ -200,9 +200,9 @@ export const createTicketTier = async (req: Request, res: Response) => {
       });
     }
 
-    const postTicketTier = await prisma.ticketTier.create({
+    const postTicketType = await prisma.ticketType.create({
       data: {
-        tierName,
+        ticketName,
         discount,
         eventId: eventWithId.id,
       },
@@ -211,7 +211,7 @@ export const createTicketTier = async (req: Request, res: Response) => {
     return res.status(200).json({
       code: 200,
       message: 'Ticket tier successfully created',
-      data: postTicketTier,
+      data: postTicketType,
     });
   } catch (error) {
     console.error(error);
@@ -299,7 +299,7 @@ export const patchEventById = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      ticketTier,
+      ticketType,
     } = req.body;
 
     const parsedId = parseInt(id);
@@ -331,7 +331,7 @@ export const patchEventById = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      ticketTier,
+      ticketType,
     };
 
     const patchedEvent = await prisma.event.update({
@@ -536,7 +536,6 @@ export const applyReferralDiscount = async (req: Request, res: Response) => {
             referral_number: referralNumber,
           },
         });
-
         // If the user with the provided referral number exists, it's considered valid
         return !!existingUser;
       } catch (error) {
@@ -544,6 +543,20 @@ export const applyReferralDiscount = async (req: Request, res: Response) => {
         return false;
       }
     };
+
+    if (!referralNumber) {
+      return res.status(404).json({
+        code: 404,
+        message: `Invalid Referral Number`,
+      });
+    }
+
+    //check referral number validity
+    // const isReferralNumberInvalid = async (
+    //   referralNumber: string,
+    // ): Promise<boolean> => {
+    //   return !(await isReferralNumberValid(referralNumber));
+    // };
 
     // Check referral number is valid
     const isReferralValid = await isReferralNumberValid(referralNumber);
