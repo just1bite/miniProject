@@ -12,13 +12,13 @@ datasource db {
 
 model User {
   id              Int       @id @default(autoincrement())
-  username        String        
+  username        String    @unique   
   password        String
   email           String    @unique
   role            String    @default("user")
   referral_number String    @unique
   points          Userpoint[]
-  voucher         Voucher[]
+  voucher         Uservoucher[]
   event           Event[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -26,18 +26,20 @@ model User {
 
 model Userpoint{
   id          Int       @id @default(autoincrement())
-  userId      Int?
-  User        User?     @relation(fields: [userId], references: [id])
+  userId      Int
+  username    String
+  User        User     @relation(fields: [userId], references: [id])
   expiredDate DateTime
   amount      Int?
 }
 
-model Voucher {
-  id          Int      @id @default(autoincrement())
-  expiredDate DateTime
-  voucherId   Int?
-  User        User?    @relation(fields: [userId], references: [id])
-  userId      Int?
+model Uservoucher {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  username          String
+  user              User    @relation(fields: [userId], references: [id])
+  expiredDate       DateTime
+  voucherAmount     Float?
 }
 
 model Event {

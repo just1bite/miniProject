@@ -89,6 +89,17 @@ export const signupUser = async (req: Request, res: Response) => {
       });
     }
 
+    const userWithUsername = await prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+    if (userWithUsername) {
+      return res.status(400).json({
+        message: 'Username already exists.',
+      });
+    }
+
     let transaction;
 
     if (!referralCode) {
@@ -136,6 +147,7 @@ export const signupUser = async (req: Request, res: Response) => {
         const point = await prisma.userpoint.create({
           data: {
             userId: authorReferral?.id,
+            username: authorReferral?.username,
             expiredDate: dayjs().add(90, 'day').toDate(),
           },
         });
@@ -155,6 +167,27 @@ export const signupUser = async (req: Request, res: Response) => {
           data: {
             amount: {
               set: totalPointsForReferrer,
+            },
+          },
+        });
+
+        // Create a voucher for the user use referral
+        const voucher = await prisma.uservoucher.create({
+          data: {
+            userId: createUser.id,
+            username: createUser.username,
+            expiredDate: dayjs().add(90, 'day').toDate(),
+          },
+        });
+
+        // Update the user voucher 10%
+        const updatedVoucher = await prisma.uservoucher.update({
+          where: {
+            id: voucher.id,
+          },
+          data: {
+            voucherAmount: {
+              set: 0.1,
             },
           },
         });
