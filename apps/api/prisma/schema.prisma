@@ -12,24 +12,24 @@ datasource db {
 
 model User {
   id              Int       @id @default(autoincrement())
-  username        String
+  username        String        
   password        String
   email           String    @unique
   role            String    @default("user")
   referral_number String    @unique
-  points          Point[]
+  points          Userpoint[]
   voucher         Voucher[]
   event           Event[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
 
-model Point {
-  id          Int      @id @default(autoincrement())
-  expiredDate DateTime
-  pointId     Int?
-  User        User?    @relation(fields: [userId], references: [id])
+model Userpoint{
+  id          Int       @id @default(autoincrement())
   userId      Int?
+  User        User?     @relation(fields: [userId], references: [id])
+  expiredDate DateTime
+  amount      Int?
 }
 
 model Voucher {
@@ -48,19 +48,11 @@ model Event {
   eventDate        DateTime
   eventLocation    String
   seatCount        Int
-  ticketType       TicketType[]
+  transaction      Transaction[]
   rating           Rating[]
   User             User?        @relation(fields: [userId], references: [id])
   userId           Int?
   promotions       Promotion[]
-}
-
-model TicketType {
-  id         Int    @id @default(autoincrement())
-  ticketName String
-  discount   Float
-  Event      Event? @relation(fields: [eventId], references: [id])
-  eventId    Int?
 }
 
 model Rating {
@@ -73,10 +65,15 @@ model Rating {
 }
 
 model Transaction {
-  id          Int      @id @default(autoincrement())
-  purchasedBy String
-  date        DateTime
-  ticketId    Int
+  id                Int      @id @default(autoincrement())
+  eventId           Int
+  eventName         String  
+  finalPrice        Float?      
+  event             Event    @relation(fields: [eventId], references: [id])
+  ticketType        String   @default("bronze")
+  purchasedBy       String
+  dateEvent         DateTime
+  datePurchased     DateTime @updatedAt
 }
 
 model Promotion {

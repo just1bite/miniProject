@@ -143,85 +143,6 @@ export const createEvent = async (req: Request, res: Response) => {
   }
 };
 
-export const createTicketType = async (req: Request, res: Response) => {
-  try {
-    const { eventId } = req.params;
-    const token: string = req.cookies['api-token'];
-    const { ticketName, discount } = req.body;
-
-    if (!token) {
-      return res.status(401).json({
-        code: 401,
-        message: 'Token not found',
-      });
-    }
-
-    const verifiedToken = verifyToken(token);
-    if (!verifiedToken.isValid) {
-      return res.status(401).json({
-        code: 401,
-        message: 'Invalid token',
-      });
-    }
-
-    const { id } = verifiedToken.data;
-
-    const userWithId = await prisma.user.findUnique({
-      where: {
-        id: id,
-      },
-    });
-
-    if (!userWithId) {
-      return res.status(401).json({
-        code: 401,
-        message: 'Invalid user Id',
-      });
-    }
-
-    if (!eventId || isNaN(parseInt(eventId))) {
-      return res.status(400).json({
-        code: 400,
-        message: 'Invalid eventId. Please provide a valid integer.',
-      });
-    }
-
-    const eventTicketId = parseInt(eventId);
-    const eventWithId = await prisma.event.findUnique({
-      where: {
-        id: eventTicketId,
-      },
-    });
-
-    if (!eventWithId) {
-      return res.status(404).json({
-        code: 404,
-        message: `Event with id ${eventTicketId} not found`,
-      });
-    }
-
-    const postTicketType = await prisma.ticketType.create({
-      data: {
-        ticketName,
-        discount,
-        eventId: eventWithId.id,
-      },
-    });
-
-    return res.status(200).json({
-      code: 200,
-      message: 'Ticket tier successfully created',
-      data: postTicketType,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      code: 500,
-      message: 'Internal Server Error',
-    });
-  }
-};
-
 export const getEvent = async (req: any, res: Response) => {
   try {
     const { id } = req;
@@ -415,40 +336,28 @@ export const createPromotion = async (
   };
 };
 
-export const redeemPoints = async (req: Request, res: Response) => {
+export const createTransaction = async (req: Request, res: Response) => {
   try {
-    const token: string = req.cookies['api-token'];
-    const { pointsToRedeem } = req.body;
+    const userToken = req.cookies['api-token'];
+    const { pointsToRedeem, ticketType } = req.body;
     const { eventid } = req.params;
-    // Validasi token
-    const verifiedToken = verifyToken(token);
+
+    // Validate token
+    const verifiedToken = verifyToken(userToken);
     if (!verifiedToken.isValid) {
       return res.status(401).json({
         code: 401,
         message: 'Invalid token',
       });
     }
-    const userId = verifiedToken.data.id;
-    const id = parseInt(eventid);
 
-    // Dapatkan informasi pengguna
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
+    const id = parseInt(verifiedToken.data.id);
+    const eventId = parseInt(eventid);
 
-    if (!user) {
-      return res.status(404).json({
-        code: 404,
-        message: 'User not found',
-      });
-    }
-
-    // Dapatkan informasi acara
+    // Get event details
     const event = await prisma.event.findUnique({
       where: {
-        id: id,
+        id: eventId,
       },
     });
 
@@ -459,23 +368,68 @@ export const redeemPoints = async (req: Request, res: Response) => {
       });
     }
 
-    // Hitung harga akhir setelah penukaran poin
-    const finalPrice = Math.max(0, event.price - pointsToRedeem);
+    let transaction;
+    transaction = await prisma.$transaction(async (prisma: any) => {
+      const createTransactionWithData = await prisma.transaction.create({
+        data: {
+          eventId: eventId,
+          eventName: event.title,
+          dateEvent: event.eventDate,
+          ticketType,
+          purchasedBy: verifiedToken.data.username,
+        },
+      });
+      return {
+        createTransactionWithData,
+      };
+    });
 
-    // Lakukan proses penukaran poin
+    //get user point
+    // const userPoint = await prisma.userpoint.findUnique({
+    //   where: {
+    //     userId: id,
+    //   },
+    // });
+
+    // if (userPoint) {
+    //   const pointAmountUser = userPoint.amount;
+    //   if (pointAmountUser < pointsToRedeem) {
+    //     // Calculate total points of the user
+    //     return res.status(400).json({
+    //       code: 400,
+    //       message: 'Not enough points to redeem',
+    //     });
+    //   }
+    // }
+
+    // // Create a transaction record (this assumes you have a 'Transaction' model)
+
+    // // Calculate the discounted price after use points
+    // const discountedPrice = event.price - parseInt(pointsToRedeem);
+    // const updatedPrice = Math.max(discountedPrice, 0);
+
+    // // Update the event's price with the discounted amount
+
+    // const updatedEvent = await prisma.transaction.update({
+    //   where: {
+    //     id: eventId,
+    //   },
+    //   data: {
+    //     finalPrice: {
+    //       set: updatedPrice,
+    //     }, // Ensure the price is not negative
+    //   },
+    // });
 
     return res.status(200).json({
       code: 200,
       message: 'Points redeemed successfully',
-      data: {
-        finalPrice,
-      },
     });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       code: 500,
-      message: 'Internal Server Error',
+      message: 'Redeem point fail',
     });
   }
 };
@@ -512,7 +466,6 @@ export const applyReferralDiscount = async (req: Request, res: Response) => {
     }
 
     // Dapatkan informasi acara
-
     const event = await prisma.event.findUnique({
       where: {
         id: id,
@@ -550,13 +503,6 @@ export const applyReferralDiscount = async (req: Request, res: Response) => {
         message: `Invalid Referral Number`,
       });
     }
-
-    //check referral number validity
-    // const isReferralNumberInvalid = async (
-    //   referralNumber: string,
-    // ): Promise<boolean> => {
-    //   return !(await isReferralNumberValid(referralNumber));
-    // };
 
     // Check referral number is valid
     const isReferralValid = await isReferralNumberValid(referralNumber);

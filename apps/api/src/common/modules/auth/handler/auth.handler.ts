@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { object, string } from 'yup';
 import dayjs from 'dayjs';
-import prisma from '@/prisma';
 import { compare, hash } from '@/common/helper/bcrypt.helper';
 import { generateToken } from '@/common/helper/jwt.helper';
 import { generateReferral } from '@/common/helper/referral.helper';
+import prisma from '@/prisma';
 
 export const signinUser = async (req: Request, res: Response) => {
   try {
@@ -75,7 +75,6 @@ export const signupUser = async (req: Request, res: Response) => {
       req.body;
 
     const hashedPassword = hash(password);
-
     const userReferral = generateReferral(username);
 
     const userWithEmail = await prisma.user.findUnique({
@@ -83,39 +82,18 @@ export const signupUser = async (req: Request, res: Response) => {
         email,
       },
     });
+
     if (userWithEmail) {
       return res.status(400).json({
         message: 'Email already exists.',
       });
     }
+
+    let transaction;
+
     if (!referralCode) {
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          username,
-          referral_number: userReferral,
-          role,
-        },
-      });
-      return res.status(200).json({
-        code: 200,
-        message: 'success',
-        data: user,
-      });
-    }
-    if (referralCode) {
-      const authorReferral = await prisma.user.findUnique({
-        where: {
-          referral_number: referralCode,
-        },
-      });
-      if (!authorReferral) {
-        return res.status(400).json({
-          message: 'invalid Referral code.',
-        });
-      }
-      const transaction = await prisma.$transaction(async (prisma: any) => {
+      // If no referral code is provided, create a user without rewards
+      transaction = await prisma.$transaction(async (prisma: any) => {
         const createUser = await prisma.user.create({
           data: {
             email,
@@ -125,32 +103,77 @@ export const signupUser = async (req: Request, res: Response) => {
             role,
           },
         });
-        const point = await prisma.point.create({
+        return {
+          createUser,
+        };
+      });
+    } else {
+      // If a referral code is provided, create a user and reward the referrer
+      const authorReferral = await prisma.user.findUnique({
+        where: {
+          referral_number: referralCode,
+        },
+      });
+
+      if (!authorReferral) {
+        return res.status(400).json({
+          message: 'Invalid Referral code.',
+        });
+      }
+
+      transaction = await prisma.$transaction(async (prisma: any) => {
+        const createUser = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            username,
+            referral_number: userReferral,
+            role,
+          },
+        });
+
+        // Create a point for the referrer
+        const point = await prisma.userpoint.create({
           data: {
             userId: authorReferral?.id,
             expiredDate: dayjs().add(90, 'day').toDate(),
           },
         });
-        const voucher = await prisma.voucher.create({
-          data: {
-            userId: createUser.id,
-            expiredDate: dayjs().add(90, 'day').toDate(),
+
+        const existingPoints = await prisma.userpoint.count({
+          where: {
+            userId: authorReferral?.id,
           },
         });
+
+        // Update the ownerReferral points by adding 10,000 points
+        const totalPointsForReferrer = existingPoints * 10000;
+        const updatedAuthor = await prisma.userpoint.update({
+          where: {
+            id: point.id,
+          },
+          data: {
+            amount: {
+              set: totalPointsForReferrer,
+            },
+          },
+        });
+
         return {
           createUser,
         };
       });
-      return res.status(200).json({
-        message: 'success',
-        data: transaction.createUser,
-      });
     }
+
+    return res.status(200).json({
+      message: 'success',
+      data: transaction.createUser,
+    });
   } catch (error: any) {
-    console.log('@@@ getBranchById error:', error.message || error);
+    console.log('@@@ signupUser error:', error.message || error);
     return res.status(500).json({
       code: 500,
-      messagge: 'Internal Server Error',
+      message: 'Internal Server Error',
     });
   }
 };
