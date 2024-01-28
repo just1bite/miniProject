@@ -149,6 +149,7 @@ export const signupUser = async (req: Request, res: Response) => {
             userId: authorReferral?.id,
             username: authorReferral?.username,
             expiredDate: dayjs().add(90, 'day').toDate(),
+            amount: 0,
           },
         });
 

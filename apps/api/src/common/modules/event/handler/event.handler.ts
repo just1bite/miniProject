@@ -385,41 +385,44 @@ export const createTransaction = async (req: Request, res: Response) => {
     });
 
     //get user point
-    // const userPoint = await prisma.userpoint.findUnique({
-    //   where: {
-    //     userId: id,
-    //   },
-    // });
+    const userPoint = await prisma.userpoint.findFirst({
+      where: {
+        userId: id,
+      },
+      orderBy: {
+        amount: 'desc',
+      },
+    });
 
-    // if (userPoint) {
-    //   const pointAmountUser = userPoint.amount;
-    //   if (pointAmountUser < pointsToRedeem) {
-    //     // Calculate total points of the user
-    //     return res.status(400).json({
-    //       code: 400,
-    //       message: 'Not enough points to redeem',
-    //     });
-    //   }
-    // }
+    if (userPoint) {
+      const pointAmountUser = userPoint.amount;
+      if (pointAmountUser < pointsToRedeem) {
+        // Calculate total points of the user
+        return res.status(400).json({
+          code: 400,
+          message: 'Not enough points to redeem',
+        });
+      }
+    }
 
-    // // Create a transaction record (this assumes you have a 'Transaction' model)
+    // Create a transaction record (this assumes you have a 'Transaction' model)
 
-    // // Calculate the discounted price after use points
-    // const discountedPrice = event.price - parseInt(pointsToRedeem);
-    // const updatedPrice = Math.max(discountedPrice, 0);
+    // Calculate the discounted price after use points
+    const discountedPrice = event.price - parseInt(pointsToRedeem);
+    const updatedPrice = Math.max(discountedPrice, 0);
 
-    // // Update the event's price with the discounted amount
+    // Update the event's price with the discounted amount
 
-    // const updatedEvent = await prisma.transaction.update({
-    //   where: {
-    //     id: eventId,
-    //   },
-    //   data: {
-    //     finalPrice: {
-    //       set: updatedPrice,
-    //     }, // Ensure the price is not negative
-    //   },
-    // });
+    const updatedEvent = await prisma.transaction.update({
+      where: {
+        id: eventId,
+      },
+      data: {
+        finalPrice: {
+          set: updatedPrice,
+        }, // Ensure the price is not negative
+      },
+    });
 
     return res.status(200).json({
       code: 200,

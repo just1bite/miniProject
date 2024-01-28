@@ -30,7 +30,7 @@ model Userpoint{
   username    String
   User        User     @relation(fields: [userId], references: [id])
   expiredDate DateTime
-  amount      Int?
+  amount      Int
 }
 
 model Uservoucher {
