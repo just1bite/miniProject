@@ -323,19 +323,6 @@ export const deleteEventById = async (req: Request, res: Response) => {
   }
 };
 
-export const createPromotion = async (
-  data: PromotionCreateInput,
-): Promise<Prisma.PromotionCreateManyInput> => {
-  return {
-    eventId: data.eventId,
-    discountVoucher: data.discountVoucher || '',
-    maxUsage: data.maxUsage,
-    referralDiscount: data.referralDiscount,
-    startDate: data.startDate,
-    endDate: data.endDate,
-  };
-};
-
 export const createTransaction = async (req: Request, res: Response) => {
   try {
     const userToken = req.cookies['api-token'];
@@ -435,6 +422,19 @@ export const createTransaction = async (req: Request, res: Response) => {
       message: 'Redeem point fail',
     });
   }
+};
+
+export const createPromotion = async (
+  data: PromotionCreateInput,
+): Promise<Prisma.PromotionCreateManyInput> => {
+  return {
+    eventId: data.eventId,
+    discountVoucher: data.discountVoucher || '',
+    maxUsage: data.maxUsage,
+    referralDiscount: data.referralDiscount,
+    startDate: data.startDate,
+    endDate: data.endDate,
+  };
 };
 
 export const applyReferralDiscount = async (req: Request, res: Response) => {

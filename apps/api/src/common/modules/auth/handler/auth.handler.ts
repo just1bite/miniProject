@@ -101,7 +101,6 @@ export const signupUser = async (req: Request, res: Response) => {
     }
 
     let transaction;
-
     if (!referralCode) {
       // If no referral code is provided, create a user without rewards
       transaction = await prisma.$transaction(async (prisma: any) => {
@@ -148,27 +147,58 @@ export const signupUser = async (req: Request, res: Response) => {
           data: {
             userId: authorReferral?.id,
             username: authorReferral?.username,
-            expiredDate: dayjs().add(90, 'day').toDate(),
+            expiredDate: dayjs().add(5, 'second').toDate(),
             amount: 0,
           },
         });
-
-        const existingPoints = await prisma.userpoint.count({
+        //find highestAmount
+        const existingPoints = await prisma.userpoint.findFirst({
           where: {
             userId: authorReferral?.id,
           },
+          orderBy: {
+            amount: 'desc',
+          },
+        });
+        const highestAmount = existingPoints ? existingPoints.amount : 0;
+        const updatedAmount = highestAmount + 10000;
+
+        const today = new Date();
+        // Mendapatkan data yang ingin dihapus dan menyimpan expiredDate yang paling baru
+        const oldUserPoints = await prisma.userpoint.findMany({
+          where: {
+            expiredDate: {
+              lt: today,
+            },
+          },
+          orderBy: {
+            expiredDate: 'asc',
+          },
         });
 
+        // Menghapus data yang sudah tua
+        const deletedUserPoints = await prisma.userpoint.deleteMany({
+          where: {
+            expiredDate: {
+              lt: today,
+            },
+          },
+        });
+
+        let latestExpiredDate = today;
+        if (oldUserPoints.length > 0) {
+          latestExpiredDate =
+            oldUserPoints[oldUserPoints.length - 1].expiredDate;
+        }
         // Update the ownerReferral points by adding 10,000 points
-        const totalPointsForReferrer = existingPoints * 10000;
+        const totalPointsForReferrer = existingPoints + 10000;
         const updatedAuthor = await prisma.userpoint.update({
           where: {
             id: point.id,
           },
           data: {
-            amount: {
-              set: totalPointsForReferrer,
-            },
+            amount: updatedAmount,
+            expiredDate: latestExpiredDate,
           },
         });
 
@@ -192,7 +222,6 @@ export const signupUser = async (req: Request, res: Response) => {
             },
           },
         });
-
         return {
           createUser,
         };
