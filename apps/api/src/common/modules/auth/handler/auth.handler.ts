@@ -36,6 +36,12 @@ export const signinUser = async (req: Request, res: Response) => {
       expires: dayjs().add(7, 'day').toDate(),
     });
 
+    const existingToken = req.cookies['api-token'];
+    if (existingToken) {
+      return res.status(400).json({
+        message: `you're already signed in.`,
+      });
+    }
     console.log(req.cookies);
 
     return res.status(200).json({
