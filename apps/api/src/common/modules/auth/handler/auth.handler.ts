@@ -42,6 +42,10 @@ export const signinUser = async (req: Request, res: Response) => {
         message: `you're already signed in.`,
       });
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0ec0325b061e86ba4b34deec57d0f1a8839cbc0c
     console.log(req.cookies);
 
     return res.status(200).json({

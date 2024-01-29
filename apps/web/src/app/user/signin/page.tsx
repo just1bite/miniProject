@@ -3,11 +3,11 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
-const apiSignInRoute = 'https://localhost:8000/api/auth/signin';
+const apiSignInRoute = 'http://localhost:8000/api/auth/signin';
 
-const signin = () => {
+const SigninUser = () => {
     const [data, setData] = useState ({
-        username:'',
+        email:'',
         password:'',
     });
     const router = useRouter();
@@ -22,7 +22,7 @@ const signin = () => {
             .then((res) => res.data)
             .catch ((error) => console.log(error));
         if (response.success === true){
-            router.push('/account');
+            router.push('/home');
             router.refresh();
         }
         } catch (error) {
@@ -33,12 +33,14 @@ const signin = () => {
         <div>
             <form onSubmit={signInUser}>
                 <h1>Sign in</h1>
-                <input/>
-                <input/>
-                <button></button>
+                <input type='email' id='email' name='email' placeholder='email' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.email}  onChange={(e) => setData({...data, email: e.target.value})}/>
+
+                <input type='password' id='password' name='password' placeholder='password' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.password}  onChange={(e) => setData({...data, password: e.target.value})}/>
+
+                <button className='bg-white text-black font-bold rounded-md py-2' type='submit'>Submit</button>
             </form>
         </div>
     )
 }
 
-export default signin;
+export default SigninUser;

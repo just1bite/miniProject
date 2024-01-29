@@ -3,13 +3,14 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
-const apiSignUpRoute = 'https://localhost:8000/api/auth/signup';
+const apiSignUpRoute = 'http://localhost:8000/api/auth/signup';
 
-const signup = () => {
+const SignupPage = () => {
     const [data, setData] = useState ({
         username:'',
         email:'',
         password:'',
+        referralCode:'',
     });
     const router = useRouter();
     const signUpUser = async (e: FormEvent) => {
@@ -18,29 +19,36 @@ const signup = () => {
             const response = await axios
             .post(apiSignUpRoute, data, {
                 withCredentials: true,  
-                headers: { 'Content-Type' : 'application/json' },
+                headers: { 'Content-Type' : 'application/json',"Access-Control-Allow-Origin": "*"},
             })
             .then((res) => res.data)
             .catch ((error) => console.log(error));
-        if (response.success === true){
-            router.push('/register');
+        if (response?.success === true){
+            router.push('/signin');
             router.refresh();
         }
         } catch (error) {
-            console.log(error);
+            console.log('error', error);
         }
     };
     return (
         <div>
-            <form onSubmit={signUpUser}>
-                <h1>Sign in</h1>
-                <input/>
-                <input/>
-                <input/>
-                <button></button>
+            <form onSubmit={signUpUser} className={"flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000000]"}>
+            <h1>Sign up</h1>
+                <input type='text' id='username' name='username' placeholder='username' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.username}  onChange={(e) => setData({...data, username: e.target.value})}/>
+
+
+                <input type='email' id='email' name='email' placeholder='email' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.email}  onChange={(e) => setData({...data, email: e.target.value})}/>
+
+
+                <input type='password' id='password' name='password' placeholder='password' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.password}  onChange={(e) => setData({...data, password: e.target.value})}/>
+                
+                <input type='text' id='referralCode' name='referralCode' placeholder='referral number' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.referralCode}  onChange={(e) => setData({...data, referralCode: e.target.value})}/>
+
+                <button className='bg-white text-black font-bold rounded-md py-2' type='submit'>Submit</button>
             </form>
         </div>
     )
 }
 
-export default signup;
+export default SignupPage;
