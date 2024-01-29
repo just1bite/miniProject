@@ -357,22 +357,61 @@ export const createTransaction = async (req: Request, res: Response) => {
 
     let transaction;
     transaction = await prisma.$transaction(async (prisma: any) => {
-      const createTransactionWithData = await prisma.transaction.create({
+      // Create the transaction
+      const createdTransaction = await prisma.transaction.create({
         data: {
           eventId: eventId,
           eventName: event.title,
           dateEvent: event.eventDate,
           ticketType,
+          finalPrice: event.price,
           purchasedBy: verifiedToken.data.username,
         },
       });
-      return {
-        createTransactionWithData,
-      };
+
+      // Get user point
+      const userPoint = await prisma.userpoint.findFirst({
+        where: {
+          userId: id,
+        },
+        orderBy: {
+          amount: 'desc',
+        },
+      });
+
+      if (userPoint) {
+        const pointAmountUser = userPoint.amount;
+        if (pointAmountUser < pointsToRedeem) {
+          // Calculate total points of the user
+          return res.status(400).json({
+            code: 400,
+            message: 'Not enough points to redeem',
+          });
+        }
+
+        // Calculate the discounted price after using points
+        const discountedPrice = createdTransaction.finalPrice - pointsToRedeem;
+        const updatedPrice = Math.max(discountedPrice, 0);
+
+        // Update the transaction's finalPrice with the discounted amount
+        const updatedTransaction = await prisma.transaction.update({
+          where: {
+            id: createdTransaction.id,
+          },
+          data: {
+            finalPrice: updatedPrice,
+          },
+        });
+      } else {
+        return res.status(404).json({
+          code: 404,
+          message: 'User points not found',
+        });
+      }
     });
 
-    //get user point
-    const userPoint = await prisma.userpoint.findFirst({
+    //Update user's pointAmount after redeeming points
+    const existingPoints = await prisma.userpoint.findFirst({
       where: {
         userId: id,
       },
@@ -380,46 +419,44 @@ export const createTransaction = async (req: Request, res: Response) => {
         amount: 'desc',
       },
     });
+    const highestAmount = existingPoints ? existingPoints.amount : 0;
+    const updatedExistingPoints = await prisma.userpoint.updateMany({
+      where: {
+        userId: id,
+      },
+      data: {
+        amount: highestAmount - pointsToRedeem,
+      },
+    });
 
-    if (userPoint) {
-      const pointAmountUser = userPoint.amount;
-      if (pointAmountUser < pointsToRedeem) {
-        // Calculate total points of the user
-        return res.status(400).json({
-          code: 400,
-          message: 'Not enough points to redeem',
-        });
-      }
+    const currentSeatCount = event.seatCount;
+    // Calculate the remaining seatCount after the transaction
+    const remainingSeatCount = currentSeatCount - 1;
+    if (remainingSeatCount < 0) {
+      return res.status(400).json({
+        code: 400,
+        message: 'Not enough seats available',
+      });
     }
-
-    // Create a transaction record (this assumes you have a 'Transaction' model)
-
-    // Calculate the discounted price after use points
-    const discountedPrice = event.price - parseInt(pointsToRedeem);
-    const updatedPrice = Math.max(discountedPrice, 0);
-
-    // Update the event's price with the discounted amount
-
-    const updatedEvent = await prisma.transaction.update({
+    //Update the event's seatCount with the remaining amount
+    const updatedSeat = await prisma.event.update({
       where: {
         id: eventId,
       },
       data: {
-        finalPrice: {
-          set: updatedPrice,
-        }, // Ensure the price is not negative
+        seatCount: remainingSeatCount,
       },
     });
 
     return res.status(200).json({
       code: 200,
-      message: 'Points redeemed successfully',
+      message: 'transaction successfully',
     });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
       code: 500,
-      message: 'Redeem point fail',
+      message: 'transaction fail',
     });
   }
 };
@@ -507,9 +544,7 @@ export const applyReferralDiscount = async (req: Request, res: Response) => {
       });
     }
 
-    // Check referral number is valid
     const isReferralValid = await isReferralNumberValid(referralNumber);
-
     const referralDiscountPercentage = 10; // 10% referral discount
     // Hitung harga akhir setelah penerapan diskon referral
     const finalPrice =

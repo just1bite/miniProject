@@ -102,7 +102,7 @@ export const signupUser = async (req: Request, res: Response) => {
 
     let transaction;
     if (!referralCode) {
-      // If no referral code is provided, create a user without rewards
+      // jika gk ada referral digunakan langsung buat user
       transaction = await prisma.$transaction(async (prisma: any) => {
         const createUser = await prisma.user.create({
           data: {
@@ -118,7 +118,7 @@ export const signupUser = async (req: Request, res: Response) => {
         };
       });
     } else {
-      // If a referral code is provided, create a user and reward the referrer
+      // jika referral code dengan referral number sama buat user yang mendapat reward
       const authorReferral = await prisma.user.findUnique({
         where: {
           referral_number: referralCode,
@@ -142,16 +142,16 @@ export const signupUser = async (req: Request, res: Response) => {
           },
         });
 
-        // Create a point for the referrer
+        // buat point untuk referral yang digunakan
         const point = await prisma.userpoint.create({
           data: {
             userId: authorReferral?.id,
             username: authorReferral?.username,
-            expiredDate: dayjs().add(5, 'second').toDate(),
+            expiredDate: dayjs().add(90, 'day').toDate(),
             amount: 0,
           },
         });
-        //find highestAmount
+        //mencari jumlah point paling besar dari user id
         const existingPoints = await prisma.userpoint.findFirst({
           where: {
             userId: authorReferral?.id,
@@ -176,7 +176,7 @@ export const signupUser = async (req: Request, res: Response) => {
           },
         });
 
-        // Menghapus data yang sudah tua
+        // Menghapus data user point yang sudah datenya tua
         const deletedUserPoints = await prisma.userpoint.deleteMany({
           where: {
             expiredDate: {
@@ -190,7 +190,8 @@ export const signupUser = async (req: Request, res: Response) => {
           latestExpiredDate =
             oldUserPoints[oldUserPoints.length - 1].expiredDate;
         }
-        // Update the ownerReferral points by adding 10,000 points
+
+        // update user yang referral nya digunakan dengan menambahkan 10.000
         const totalPointsForReferrer = existingPoints + 10000;
         const updatedAuthor = await prisma.userpoint.update({
           where: {
@@ -202,7 +203,7 @@ export const signupUser = async (req: Request, res: Response) => {
           },
         });
 
-        // Create a voucher for the user use referral
+        // buat voucher untuk orang yang menggunakan referral
         const voucher = await prisma.uservoucher.create({
           data: {
             userId: createUser.id,
@@ -211,7 +212,10 @@ export const signupUser = async (req: Request, res: Response) => {
           },
         });
 
-        // Update the user voucher 10%
+        // Dapatkan ID dari voucher yang baru saja dibuat
+        const voucherId = voucher.id;
+
+        // update user voucher kedalam model userVoucher
         const updatedVoucher = await prisma.uservoucher.update({
           where: {
             id: voucher.id,
