@@ -1,54 +1,116 @@
-'use client'
+'use client';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
 const apiSignUpRoute = 'http://localhost:8000/api/auth/signup';
 
+// ... (previous imports)
+
 const SignupPage = () => {
-    const [data, setData] = useState ({
-        username:'',
-        email:'',
-        password:'',
-        referralCode:'',
-    });
-    const router = useRouter();
-    const signUpUser = async (e: FormEvent) => {
-        e.preventDefault();
-        try {
-            const response = await axios
-            .post(apiSignUpRoute, data, {
-                withCredentials: true,  
-                headers: { 'Content-Type' : 'application/json',"Access-Control-Allow-Origin": "*"},
-            })
-            .then((res) => res.data)
-            .catch ((error) => console.log(error));
-        if (response?.success === true){
-            router.push('/signin');
-            router.refresh();
-        }
-        } catch (error) {
-            console.log('error', error);
-        }
-    };
-    return (
-        <div>
-            <form onSubmit={signUpUser} className={"flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000000]"}>
-            <h1>Sign up</h1>
-                <input type='text' id='username' name='username' placeholder='username' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.username}  onChange={(e) => setData({...data, username: e.target.value})}/>
+  const [data, setData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    referralCode: '',
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
+  const router = useRouter();
 
-                <input type='email' id='email' name='email' placeholder='email' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.email}  onChange={(e) => setData({...data, email: e.target.value})}/>
+  const signUpUser = async (e: FormEvent) => {
+    e.preventDefault();
 
+    try {
+      setLoading(true);
 
-                <input type='password' id='password' name='password' placeholder='password' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.password}  onChange={(e) => setData({...data, password: e.target.value})}/>
-                
-                <input type='text' id='referralCode' name='referralCode' placeholder='referral number' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.referralCode}  onChange={(e) => setData({...data, referralCode: e.target.value})}/>
+      const response = await axios.post(apiSignUpRoute, data, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
 
-                <button className='bg-white text-black font-bold rounded-md py-2' type='submit'>Submit</button>
-            </form>
-        </div>
-    )
-}
+      if (response?.data.success) {
+        console.log('Redirecting to /signin...');
+        router.push('/user/signin');
+      } else {
+        setError('Sign-up failed. Please check your information.');
+      }
+    } catch (error) {
+      console.error('Error during sign-up:', error);
+      setError('An error occurred. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <form
+        onSubmit={signUpUser}
+        className="flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000000]"
+      >
+        <h1 className="text-center">Sign up</h1>
+
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="Username"
+          aria-label="Username"
+          className="text-white font-bold bg-[#FFFFFF] border-b-2"
+          value={data.username}
+          onChange={(e) => setData({ ...data, username: e.target.value })}
+        />
+
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="Email"
+          aria-label="Email"
+          className="text-white font-bold bg-[#FFFFFF] border-b-2"
+          value={data.email}
+          onChange={(e) => setData({ ...data, email: e.target.value })}
+        />
+
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Password"
+          aria-label="Password"
+          className="text-white font-bold bg-[#FFFFFF] border-b-2"
+          value={data.password}
+          onChange={(e) => setData({ ...data, password: e.target.value })}
+        />
+
+        <input
+          type="text"
+          id="referralCode"
+          name="referralCode"
+          placeholder="Referral Number"
+          aria-label="Referral Number"
+          className="text-white font-bold bg-[#FFFFFF] border-b-2"
+          value={data.referralCode}
+          onChange={(e) => setData({ ...data, referralCode: e.target.value })}
+        />
+
+        <button
+          className="bg-white text-black font-bold rounded-md py-2"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? 'Signing Up...' : 'Submit'}
+        </button>
+
+        {error && <p className="text-red-500">{error}</p>}
+      </form>
+    </div>
+  );
+};
 
 export default SignupPage;

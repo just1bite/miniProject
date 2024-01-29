@@ -242,6 +242,7 @@ export const signupUser = async (req: Request, res: Response) => {
     return res.status(200).json({
       message: 'success',
       data: transaction.createUser,
+      success: true,
     });
   } catch (error: any) {
     console.log('@@@ signupUser error:', error.message || error);
