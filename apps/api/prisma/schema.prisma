@@ -12,32 +12,34 @@ datasource db {
 
 model User {
   id              Int       @id @default(autoincrement())
-  username        String
+  username        String    @unique   
   password        String
   email           String    @unique
   role            String    @default("user")
   referral_number String    @unique
-  points          Point[]
-  voucher         Voucher[]
+  points          Userpoint[]
+  voucher         Uservoucher[]
   event           Event[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
 
-model Point {
-  id          Int      @id @default(autoincrement())
+model Userpoint{
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  username    String
+  User        User     @relation(fields: [userId], references: [id])
   expiredDate DateTime
-  pointId     Int?
-  User        User?    @relation(fields: [userId], references: [id])
-  userId      Int?
+  amount      Int
 }
 
-model Voucher {
-  id          Int      @id @default(autoincrement())
-  expiredDate DateTime
-  voucherId   Int?
-  User        User?    @relation(fields: [userId], references: [id])
-  userId      Int?
+model Uservoucher {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  username          String
+  user              User    @relation(fields: [userId], references: [id])
+  expiredDate       DateTime
+  voucherAmount     Float?
 }
 
 model Event {
@@ -48,18 +50,11 @@ model Event {
   eventDate        DateTime
   eventLocation    String
   seatCount        Int
-  ticketTier       TicketTier[]
+  transaction      Transaction[]
   rating           Rating[]
   User             User?        @relation(fields: [userId], references: [id])
   userId           Int?
-}
-
-model TicketTier {
-  id       Int    @id @default(autoincrement())
-  tierName String
-  discount Float
-  Event    Event? @relation(fields: [eventId], references: [id])
-  eventId  Int?
+  promotions       Promotion[]
 }
 
 model Rating {
@@ -72,8 +67,24 @@ model Rating {
 }
 
 model Transaction {
-  id          Int      @id @default(autoincrement())
-  purchasedBy String
-  date        DateTime
-  ticketId    Int
+  id                Int      @id @default(autoincrement())
+  eventId           Int
+  eventName         String  
+  finalPrice        Float?      
+  event             Event    @relation(fields: [eventId], references: [id])
+  ticketType        String   @default("bronze")
+  purchasedBy       String
+  dateEvent         DateTime
+  datePurchased     DateTime @updatedAt
+}
+
+model Promotion {
+  id               Int       @id @default(autoincrement())
+  eventId          Int
+  discountVoucher  String
+  maxUsage         Int?
+  referralDiscount Int?
+  startDate        DateTime?
+  endDate          DateTime?
+  event            Event     @relation(fields: [eventId], references: [id])
 }

@@ -1,8 +1,9 @@
 import prisma from '@/prisma';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
-import { date, number, object, string } from 'yup';
+import { boolean, date, number, object, string } from 'yup';
 import { verifyToken } from '@/common/helper/jwt.helper';
+import { Prisma } from '@prisma/client';
 
 export interface eventPayload {
   title: string;
@@ -12,6 +13,8 @@ export interface eventPayload {
   eventLocation: string;
   seatCount: number;
   userId: number;
+  isFree: boolean;
+  // ticketName: string;
 }
 
 export interface patchEventPayload {
@@ -21,7 +24,16 @@ export interface patchEventPayload {
   eventDate?: Date;
   eventLocation?: string;
   seatCount?: number;
-  ticketTier?: string;
+  tiketType?: string;
+}
+
+export interface PromotionCreateInput {
+  eventId: number;
+  discountVoucher?: string;
+  maxUsage?: number;
+  referralDiscount?: number;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export const eventPayload = object({
@@ -38,6 +50,7 @@ export const eventPayload = object({
     eventDate: date().required('date is require'),
     eventLocation: string().required('location is require'),
     seatCount: number().required('available seat is require'),
+    isFree: boolean().required('isFree is required'),
   }),
 });
 
@@ -78,6 +91,7 @@ export const createEvent = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
+      isFree, // ticketTypes, //ticketTier
     }: eventPayload = req.body;
     if (
       !title ||
@@ -97,7 +111,7 @@ export const createEvent = async (req: Request, res: Response) => {
       data: {
         title,
         eventDescription,
-        price,
+        price: isFree ? 0 : price,
         eventDate,
         eventLocation,
         seatCount,
@@ -105,81 +119,27 @@ export const createEvent = async (req: Request, res: Response) => {
       },
     });
 
+    // Membuat promosi jika diperlukan
+    const { createPromotionIfNeeded, discountVoucher, startDate, endDate } =
+      req.body;
+    if (createPromotionIfNeeded) {
+      await prisma.promotion.createMany({
+        data: [
+          await createPromotion({
+            eventId: createEvent.id,
+            discountVoucher,
+            startDate,
+            endDate,
+          }),
+        ],
+      });
+    }
     return res.status(200).json({
       code: 200,
       message: 'Event Created Successfully',
     });
   } catch (error) {
-    console.log(error);
-  }
-};
-
-export const createTicketTier = async (req: Request, res: Response) => {
-  try {
-    const { eventId } = req.params;
-    const token: string = req.cookies['api-token'];
-    const { tierName, discount } = req.body;
-
-    if (!token) {
-      return res.status(401).json({
-        code: 401,
-        message: 'Token not found',
-      });
-    }
-    const verifiedToken = verifyToken(token);
-    if (!verifiedToken.isValid) {
-      return res.status(401).json({
-        code: 401,
-        message: 'Invalid token',
-      });
-    }
-    const { id } = verifiedToken.data;
-    const userWithId = await prisma.user.findUnique({
-      where: {
-        id: id,
-      },
-    });
-    if (!userWithId) {
-      return res.status(401).json({
-        code: 401,
-        message: 'Invalid user Id',
-      });
-    }
-    if (!eventId) {
-      return res.status(401).json({
-        code: 401,
-        message: `Event id ${eventId} not found`,
-      });
-    }
-
-    const eventWithId = await prisma.event.findUnique({
-      where: {
-        id: parseInt(eventId),
-      },
-    });
-
-    if (!eventWithId) {
-      return res.status(401).json({
-        code: 401,
-        message: `Event id ${eventWithId} not found`,
-      });
-    }
-
-    const postTicketTier = await prisma.ticketTier.create({
-      data: {
-        tierName,
-        discount,
-        eventId: eventWithId.id,
-      },
-    });
-
-    return res.status(200).json({
-      code: 200,
-      message: 'Ticket tier successfully created',
-      data: postTicketTier,
-    });
-  } catch (error) {
-    console.log(error);
+    console.log(error, createEvent);
   }
 };
 
@@ -199,7 +159,7 @@ export const getEvent = async (req: any, res: Response) => {
       data: getEvent,
     });
   } catch (error: any) {
-    console.log('@@@ getArticles error :', error.message || error);
+    console.log('@@@ getEvent error :', error.message || error);
     return res.status(500).json({
       code: 500,
       message: 'Internal Server Error',
@@ -209,7 +169,6 @@ export const getEvent = async (req: any, res: Response) => {
 
 export const getEventById = async (req: Request, res: Response) => {
   try {
-    const { userUser_id } = req.params;
     const { id } = req.params;
 
     const parsedId = parseInt(id);
@@ -220,27 +179,30 @@ export const getEventById = async (req: Request, res: Response) => {
       });
     }
 
-    const userArticle = await prisma.event.findFirst({
+    const userEvent = await prisma.event.findFirst({
       where: {
         id: parsedId,
         userId: parsedId,
       },
+      include: {
+        promotions: true,
+      },
     });
 
-    if (!userArticle) {
+    if (!userEvent) {
       return res.status(404).json({
         code: 404,
-        message: `Article with id ${parsedId} not found`,
+        message: `Event with id ${parsedId} not found`,
       });
     }
 
     return res.status(200).json({
       code: 200,
       message: 'Success',
-      data: userArticle,
+      data: userEvent,
     });
   } catch (error: any) {
-    console.log('@@@ getArticles error :', error.message || error);
+    console.log('@@@ getEvent error :', error.message || error);
     return res.status(500).json({
       code: 500,
       message: 'Internal Server Error',
@@ -258,7 +220,7 @@ export const patchEventById = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      ticketTier,
+      ticketType,
     } = req.body;
 
     const parsedId = parseInt(id);
@@ -290,7 +252,7 @@ export const patchEventById = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      ticketTier,
+      ticketType,
     };
 
     const patchedEvent = await prisma.event.update({
@@ -361,115 +323,245 @@ export const deleteEventById = async (req: Request, res: Response) => {
   }
 };
 
-// export const deleteEventById = async (req: Request, res: Response) => {
-//   try {
-//     const { userUser_id } = req.params;
-//     const { id } = req.params;
+export const createTransaction = async (req: Request, res: Response) => {
+  try {
+    const userToken = req.cookies['api-token'];
+    const { pointsToRedeem, ticketType } = req.body;
+    const { eventid } = req.params;
 
-//     const parsedId = parseInt(id);
-//     if (!parsedId || isNaN(parsedId)) {
-//       return res.status(400).json({
-//         code: 400,
-//         message: 'Invalid ID params',
-//       });
-//     }
+    // Validate token
+    const verifiedToken = verifyToken(userToken);
+    if (!verifiedToken.isValid) {
+      return res.status(401).json({
+        code: 401,
+        message: 'Invalid token',
+      });
+    }
 
-//     const userEvent = await prisma.event.findFirst({
-//       where: {
-//         id: parsedId,
-//         userUser_id: parsedId,
-//       },
-//     });
+    const id = parseInt(verifiedToken.data.id);
+    const eventId = parseInt(eventid);
 
-//     if (!userEvent) {
-//       return res.status(404).json({
-//         code: 404,
-//         message: `Article with id ${parsedId} not found`,
-//       });
-//     }
+    // Get event details
+    const event = await prisma.event.findUnique({
+      where: {
+        id: eventId,
+      },
+    });
 
-//     await prisma.event.delete({
-//       where: {
-//         id: parsedId,
-//       },
-//     });
+    if (!event) {
+      return res.status(404).json({
+        code: 404,
+        message: 'Event not found',
+      });
+    }
 
-//     return res.status(200).json({
-//       code: 200,
-//       message: 'Success',
-//     });
-//   } catch (error: any) {
-//     console.log('@@@ getArticles error :', error.message || error);
-//     return res.status(500).json({
-//       code: 500,
-//       message: 'Internal Server Error',
-//     });
-//   }
-// };
+    let transaction;
+    transaction = await prisma.$transaction(async (prisma: any) => {
+      // Create the transaction
+      const createdTransaction = await prisma.transaction.create({
+        data: {
+          eventId: eventId,
+          eventName: event.title,
+          dateEvent: event.eventDate,
+          ticketType,
+          finalPrice: event.price,
+          purchasedBy: verifiedToken.data.username,
+        },
+      });
 
-// export const patchEventById = async (req: Request, res: Response) => {
-//   try {
-//     const { userUser_id } = req.params;
-//     const { id } = req.params;
-//     const {
-//       title,
-//       eventDescription,
-//       price,
-//       eventDate,
-//       eventLocation,
-//       seatCount,
-//       ticketTier,
-//     } = req.body;
+      // Get user point
+      const userPoint = await prisma.userpoint.findFirst({
+        where: {
+          userId: id,
+        },
+        orderBy: {
+          amount: 'desc',
+        },
+      });
 
-//     const patchEventPayload = {
-//       title,
-//       eventDescription,
-//       price,
-//       eventDate,
-//       eventLocation,
-//       seatCount,
-//       ticketTier,
-//     };
+      if (userPoint) {
+        const pointAmountUser = userPoint.amount;
+        if (pointAmountUser < pointsToRedeem) {
+          // Calculate total points of the user
+          return res.status(400).json({
+            code: 400,
+            message: 'Not enough points to redeem',
+          });
+        }
 
-//     const parsedId = parseInt(id);
-//     if (!parsedId || isNaN(parsedId)) {
-//       return res.status(400).json({
-//         code: 400,
-//         message: 'Invalid ID params',
-//       });
-//     }
+        // Calculate the discounted price after using points
+        const discountedPrice = createdTransaction.finalPrice - pointsToRedeem;
+        const updatedPrice = Math.max(discountedPrice, 0);
 
-//     const userEvent = await prisma.event.findFirst({
-//       where: {
-//         id: parsedId,
-//         userUser_id: parsedId,
-//       },
-//     });
+        // Update the transaction's finalPrice with the discounted amount
+        const updatedTransaction = await prisma.transaction.update({
+          where: {
+            id: createdTransaction.id,
+          },
+          data: {
+            finalPrice: updatedPrice,
+          },
+        });
+      } else {
+        return res.status(404).json({
+          code: 404,
+          message: 'User points not found',
+        });
+      }
+    });
 
-//     if (!userEvent) {
-//       return res.status(404).json({
-//         code: 404,
-//         message: `Event with id ${parsedId} not found`,
-//       });
-//     }
+    //Update user's pointAmount after redeeming points
+    const existingPoints = await prisma.userpoint.findFirst({
+      where: {
+        userId: id,
+      },
+      orderBy: {
+        amount: 'desc',
+      },
+    });
+    const highestAmount = existingPoints ? existingPoints.amount : 0;
+    const updatedExistingPoints = await prisma.userpoint.updateMany({
+      where: {
+        userId: id,
+      },
+      data: {
+        amount: highestAmount - pointsToRedeem,
+      },
+    });
 
-//     const patchedEvent = await prisma.event.update({
-//       where: {
-//         id: parsedId,
-//       },
-//       data: patchEventPayload,
-//     });
+    const currentSeatCount = event.seatCount;
+    // Calculate the remaining seatCount after the transaction
+    const remainingSeatCount = currentSeatCount - 1;
+    if (remainingSeatCount < 0) {
+      return res.status(400).json({
+        code: 400,
+        message: 'Not enough seats available',
+      });
+    }
+    //Update the event's seatCount with the remaining amount
+    const updatedSeat = await prisma.event.update({
+      where: {
+        id: eventId,
+      },
+      data: {
+        seatCount: remainingSeatCount,
+      },
+    });
 
-//     return res.status(200).json({
-//       code: 200,
-//       message: 'Success',
-//       data: patchEventPayload,
-//     });
-//   } catch (error: any) {
-//     console.log('@@@ getArticles error :', error.message || error);
-//     return res.status(500).json({
-//       code: 500,
-//       message: 'Internal Server Error',
-//     });
-//   }
-// };
+    return res.status(200).json({
+      code: 200,
+      message: 'transaction successfully',
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      code: 500,
+      message: 'transaction fail',
+    });
+  }
+};
+
+export const createPromotion = async (
+  data: PromotionCreateInput,
+): Promise<Prisma.PromotionCreateManyInput> => {
+  return {
+    eventId: data.eventId,
+    discountVoucher: data.discountVoucher || '',
+    maxUsage: data.maxUsage,
+    referralDiscount: data.referralDiscount,
+    startDate: data.startDate,
+    endDate: data.endDate,
+  };
+};
+
+export const applyReferralDiscount = async (req: Request, res: Response) => {
+  try {
+    const userToken = req.cookies['api-token'];
+    const { referralNumber } = req.body;
+    const { eventid } = req.params;
+
+    // Validasi token
+    const verifiedToken = verifyToken(userToken);
+    if (!verifiedToken.isValid) {
+      return res.status(401).json({
+        code: 401,
+        message: 'Invalid token',
+      });
+    }
+    const userId = verifiedToken.data.id;
+    const id = parseInt(eventid);
+
+    // Dapatkan informasi pengguna
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        message: 'User not found',
+      });
+    }
+
+    // Dapatkan informasi acara
+    const event = await prisma.event.findUnique({
+      where: {
+        id: id,
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        code: 404,
+        message: 'Event not found',
+      });
+    }
+
+    // Cek apakah referralNumber valid
+    const isReferralNumberValid = async (
+      referralNumber: string,
+    ): Promise<boolean> => {
+      try {
+        const existingUser = await prisma.user.findUnique({
+          where: {
+            referral_number: referralNumber,
+          },
+        });
+        // If the user with the provided referral number exists, it's considered valid
+        return !!existingUser;
+      } catch (error) {
+        console.error('Error checking referral number validity:', error);
+        return false;
+      }
+    };
+
+    if (!referralNumber) {
+      return res.status(404).json({
+        code: 404,
+        message: `Invalid Referral Number`,
+      });
+    }
+
+    const isReferralValid = await isReferralNumberValid(referralNumber);
+    const referralDiscountPercentage = 10; // 10% referral discount
+    // Hitung harga akhir setelah penerapan diskon referral
+    const finalPrice =
+      event.price - (event.price * referralDiscountPercentage) / 100;
+
+    return res.status(200).json({
+      code: 200,
+      message: 'Referral discount applied successfully',
+      data: {
+        finalPrice,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      code: 500,
+      message: 'Internal Server Error',
+    });
+  }
+};

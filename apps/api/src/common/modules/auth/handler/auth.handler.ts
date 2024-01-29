@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { object, string } from 'yup';
 import dayjs from 'dayjs';
-import prisma from '@/prisma';
 import { compare, hash } from '@/common/helper/bcrypt.helper';
 import { generateToken } from '@/common/helper/jwt.helper';
 import { generateReferral } from '@/common/helper/referral.helper';
+import prisma from '@/prisma';
 
 export const signinUser = async (req: Request, res: Response) => {
   try {
@@ -36,6 +36,13 @@ export const signinUser = async (req: Request, res: Response) => {
       expires: dayjs().add(7, 'day').toDate(),
     });
 
+    const existingToken = req.cookies['api-token'];
+    if (existingToken) {
+      return res.status(400).json({
+        message: `you're already signed in.`,
+      });
+    }
+
     console.log(req.cookies);
 
     return res.status(200).json({
@@ -53,6 +60,7 @@ export interface signupPayload {
   password: string;
   username: string;
   referralCode?: string;
+  role?: string;
 }
 
 export const signUpSchema = object({
@@ -70,10 +78,10 @@ export const signUpSchema = object({
 });
 export const signupUser = async (req: Request, res: Response) => {
   try {
-    const { email, password, username, referralCode }: signupPayload = req.body;
+    const { email, password, username, referralCode, role }: signupPayload =
+      req.body;
 
     const hashedPassword = hash(password);
-
     const userReferral = generateReferral(username);
 
     const userWithEmail = await prisma.user.findUnique({
@@ -81,72 +89,166 @@ export const signupUser = async (req: Request, res: Response) => {
         email,
       },
     });
+
     if (userWithEmail) {
       return res.status(400).json({
         message: 'Email already exists.',
       });
     }
-    if (!referralCode) {
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          username,
-          referral_number: userReferral,
-        },
-      });
-      return res.status(200).json({
-        code: 200,
-        message: 'success',
-        data: user,
+
+    const userWithUsername = await prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+    if (userWithUsername) {
+      return res.status(400).json({
+        message: 'Username already exists.',
       });
     }
-    if (referralCode) {
-      const authorReferral = await prisma.user.findUnique({
-        where: {
-          referral_number: referralCode,
-        },
-      });
-      if (!authorReferral) {
-        return res.status(400).json({
-          message: 'invalid Referral code.',
-        });
-      }
-      const transaction = await prisma.$transaction(async (prisma: any) => {
+
+    let transaction;
+    if (!referralCode) {
+      // jika gk ada referral digunakan langsung buat user
+      transaction = await prisma.$transaction(async (prisma: any) => {
         const createUser = await prisma.user.create({
           data: {
             email,
             password: hashedPassword,
             username,
             referral_number: userReferral,
-          },
-        });
-        const point = await prisma.point.create({
-          data: {
-            userId: authorReferral?.id,
-            expiredDate: dayjs().add(90, 'day').toDate(),
-          },
-        });
-        const voucher = await prisma.voucher.create({
-          data: {
-            userId: createUser.id,
-            expiredDate: dayjs().add(90, 'day').toDate(),
+            role,
           },
         });
         return {
           createUser,
         };
       });
-      return res.status(200).json({
-        message: 'success',
-        data: transaction.createUser,
+    } else {
+      // jika referral code dengan referral number sama buat user yang mendapat reward
+      const authorReferral = await prisma.user.findUnique({
+        where: {
+          referral_number: referralCode,
+        },
+      });
+
+      if (!authorReferral) {
+        return res.status(400).json({
+          message: 'Invalid Referral code.',
+        });
+      }
+
+      transaction = await prisma.$transaction(async (prisma: any) => {
+        const createUser = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            username,
+            referral_number: userReferral,
+            role,
+          },
+        });
+
+        // buat point untuk referral yang digunakan
+        const point = await prisma.userpoint.create({
+          data: {
+            userId: authorReferral?.id,
+            username: authorReferral?.username,
+            expiredDate: dayjs().add(90, 'day').toDate(),
+            amount: 0,
+          },
+        });
+        //mencari jumlah point paling besar dari user id
+        const existingPoints = await prisma.userpoint.findFirst({
+          where: {
+            userId: authorReferral?.id,
+          },
+          orderBy: {
+            amount: 'desc',
+          },
+        });
+        const highestAmount = existingPoints ? existingPoints.amount : 0;
+        const updatedAmount = highestAmount + 10000;
+
+        const today = new Date();
+        // Mendapatkan data yang ingin dihapus dan menyimpan expiredDate yang paling baru
+        const oldUserPoints = await prisma.userpoint.findMany({
+          where: {
+            expiredDate: {
+              lt: today,
+            },
+          },
+          orderBy: {
+            expiredDate: 'asc',
+          },
+        });
+
+        // Menghapus data user point yang sudah datenya tua
+        const deletedUserPoints = await prisma.userpoint.deleteMany({
+          where: {
+            expiredDate: {
+              lt: today,
+            },
+          },
+        });
+
+        let latestExpiredDate = today;
+        if (oldUserPoints.length > 0) {
+          latestExpiredDate =
+            oldUserPoints[oldUserPoints.length - 1].expiredDate;
+        }
+
+        // update user yang referral nya digunakan dengan menambahkan 10.000
+        const totalPointsForReferrer = existingPoints + 10000;
+        const updatedAuthor = await prisma.userpoint.update({
+          where: {
+            id: point.id,
+          },
+          data: {
+            amount: updatedAmount,
+            expiredDate: latestExpiredDate,
+          },
+        });
+
+        // buat voucher untuk orang yang menggunakan referral
+        const voucher = await prisma.uservoucher.create({
+          data: {
+            userId: createUser.id,
+            username: createUser.username,
+            expiredDate: dayjs().add(90, 'day').toDate(),
+          },
+        });
+
+        // Dapatkan ID dari voucher yang baru saja dibuat
+        const voucherId = voucher.id;
+
+        // update user voucher kedalam model userVoucher
+        const updatedVoucher = await prisma.uservoucher.update({
+          where: {
+            id: voucher.id,
+          },
+          data: {
+            voucherAmount: {
+              set: 0.1,
+            },
+          },
+        });
+        return {
+          createUser,
+        };
       });
     }
+
+    return res.status(200).json({
+      message: 'success',
+      data: transaction.createUser,
+      success: true,
+    });
   } catch (error: any) {
-    console.log('@@@ getBranchById error:', error.message || error);
+    console.log('@@@ signupUser error:', error.message || error);
     return res.status(500).json({
       code: 500,
-      messagge: 'Internal Server Error',
+      message: 'Internal Server Error',
     });
   }
 };

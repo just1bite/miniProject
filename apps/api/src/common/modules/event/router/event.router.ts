@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import {
+  applyReferralDiscount,
   createEvent,
-  createTicketTier,
+  createTransaction,
+  // createTicketType,
   deleteEventById,
   eventPayload,
   getEvent,
   getEventById,
   patchEventById,
+  // redeemPoints,
 } from '../handler/event.handler';
 import { inputValidator } from '@/common/helper/validator.helper';
 import authorizationMiddleware from '@/common/middleware/authorization.middleware';
@@ -21,11 +24,13 @@ eventRouter.post(
   createEvent,
 );
 
-eventRouter.get('/', authorizationMiddleware, getEvent);
+eventRouter.get('/', getEvent);
 eventRouter.get('/:id', authorizationMiddleware, getEventById);
 eventRouter.patch('/update/:id', authorizationMiddleware, patchEventById);
 eventRouter.delete('/delete/:id', authorizationMiddleware, deleteEventById);
-eventRouter.post('/:eventId', authorizationMiddleware, createTicketTier);
+// eventRouter.post('/:eventid', authorizationMiddleware, createTicketType);
 eventRouter.post('/:eventid/rating', addRatingAndReview);
+eventRouter.post('/:eventid/referral', applyReferralDiscount);
+eventRouter.post('/:eventid/transaction', createTransaction);
 
 export default eventRouter;
