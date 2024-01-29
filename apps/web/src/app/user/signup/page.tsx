@@ -24,9 +24,7 @@ const SignupPage = () => {
             .then((res) => res.data)
             .catch ((error) => console.log(error));
         if (response.success === true){
-            // console.log('Navigating to /signin');
             router.push('/user/signin');
-            router.refresh();
         }
         } catch (error) {
             console.log('error', error);

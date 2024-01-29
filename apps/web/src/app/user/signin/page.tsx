@@ -29,8 +29,8 @@ const SigninUser = () => {
         }
     };
     return (
-        <div>
-            <form onSubmit={signInUser}>
+        <div className='flex flex-wrap bg-[#2A0134] items-center justify-center py-10'>
+            <form onSubmit={signInUser}className={"flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000]"}>
                 <h1>Sign in</h1>
                 <input type='email' id='email' name='email' placeholder='email' className='text-white font-bold bg-[#FFFFFF] border-b-2' value={data.email}  onChange={(e) => setData({...data, email: e.target.value})}/>
 
