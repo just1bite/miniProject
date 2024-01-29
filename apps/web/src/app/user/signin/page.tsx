@@ -22,8 +22,7 @@ const SigninUser = () => {
             .then((res) => res.data)
             .catch ((error) => console.log(error));
         if (response.success === true){
-            router.push('/home');
-            router.refresh();
+            router.push('/user/account');
         }
         } catch (error) {
             console.log(error);

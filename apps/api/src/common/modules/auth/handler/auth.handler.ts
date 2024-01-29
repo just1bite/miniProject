@@ -241,6 +241,7 @@ export const signupUser = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       message: 'success',
+      success: true,
       data: transaction.createUser,
     });
   } catch (error: any) {
