@@ -6,69 +6,17 @@ import { generateToken } from '@/common/helper/jwt.helper';
 import { generateReferral } from '@/common/helper/referral.helper';
 import prisma from '@/prisma';
 
-// export const signinUser = async (req: Request, res: Response) => {
-//   try {
-//     const { email, password } = req.body;
-//     const user = await prisma.user.findUnique({
-//       where: { email },
-//     });
-//     if (!user) {
-//       return res.status(400).json({
-//         message: `user with email ${email} not found`,
-//       });
-//     }
-//     const isValidUserPassword = compare(password, user.password);
-
-//     if (!isValidUserPassword) {
-//       return res.status(404).json({
-//         message: `invalid user or password`,
-//       });
-//     }
-//     const token = generateToken({
-//       id: user.id,
-//       email: user.email,
-//       username: user.username,
-//       role: user.role,
-//     });
-//     res.status(200).cookie('api-token', token, {
-//       secure: true,
-//       httpOnly: true,
-//       expires: dayjs().add(7, 'day').toDate(),
-//     });
-
-//     const existingToken = req.cookies['api-token'];
-//     if (existingToken) {
-//       return res.status(400).json({
-//         message: `you're already signed in.`,
-//       });
-//     }
-
-//     console.log(req.cookies);
-
-//     return res.status(200).json({
-//       code: 200,
-//       success: true,
-//       message: 'success',
-//       data: user,
-//     });
-//   } catch (error: any) {
-//     console.log(error);
-//   }
-// };
-
 export const signinUser = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({
       where: { email },
     });
-
     if (!user) {
       return res.status(400).json({
         message: `user with email ${email} not found`,
       });
     }
-
     const isValidUserPassword = compare(password, user.password);
 
     if (!isValidUserPassword) {
@@ -76,33 +24,35 @@ export const signinUser = async (req: Request, res: Response) => {
         message: `invalid user or password`,
       });
     }
-
     const token = generateToken({
       id: user.id,
       email: user.email,
       username: user.username,
       role: user.role,
     });
-
-    // Set cookie on the server
     res.status(200).cookie('api-token', token, {
       secure: true,
       httpOnly: true,
       expires: dayjs().add(7, 'day').toDate(),
     });
 
-    // Send a response with the user data
-    res.status(200).json({
+    const existingToken = req.cookies['api-token'];
+    if (existingToken) {
+      return res.status(400).json({
+        message: `you're already signed in.`,
+      });
+    }
+
+    console.log(req.cookies);
+
+    return res.status(200).json({
       code: 200,
       success: true,
       message: 'success',
       data: user,
     });
   } catch (error: any) {
-    console.error(error);
-    res.status(500).json({
-      message: 'Internal Server Error',
-    });
+    console.log(error);
   }
 };
 

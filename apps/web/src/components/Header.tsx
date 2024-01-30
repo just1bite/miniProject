@@ -1,20 +1,23 @@
-"use client"
+'use client';
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
-  cookie: string | undefined;
+  cookie?: string | undefined;
 }
 
 export const Header = (props: HeaderProps) => {
   const { cookie } = props;
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const clientCookie = Cookies.get('api-token');
+  console.log(clientCookie);
 
   useEffect(() => {
-    const clientCookie = Cookies.get('api-token');
-    setIsAuthenticated(!!clientCookie);
+    if (cookie) {
+      setIsAuthenticated(true);
+    }
   }, [cookie]);
 
   const handleSignOut = async () => {
@@ -35,6 +38,7 @@ export const Header = (props: HeaderProps) => {
 
         // Redirect to the sign-in page
         router.push('/user/signin');
+        router.refresh();
       } else {
         // Handle sign-out failure, log error, etc.
         console.error('Sign-out failed:', response.status, response.statusText);
@@ -55,12 +59,15 @@ export const Header = (props: HeaderProps) => {
             <a href="/about">About</a>
           </li>
           <li>
-            {isAuthenticated ? (
+            {cookie ? (
               <button onClick={handleSignOut}>Sign Out</button>
             ) : (
               <a href="/user/signin">Sign In</a>
             )}
           </li>
+          {/* <li>
+            <button >Sign Out</button>
+          </li> */}
         </ul>
       </nav>
     </header>
