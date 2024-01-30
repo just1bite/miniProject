@@ -39,7 +39,7 @@ model Uservoucher {
   username      String
   user          User     @relation(fields: [userId], references: [id])
   expiredDate   DateTime
-  voucherAmount Float?
+  voucherAmount Float
 }
 
 model Event {
@@ -72,9 +72,9 @@ model Transaction {
   eventName     String
   finalPrice    Float?
   event         Event    @relation(fields: [eventId], references: [id])
-  ticketType    String   @default("bronze")
   purchasedBy   String
-  dateEvent     DateTime
+  dateEvent     DateTime 
+  countSeat     Int
   datePurchased DateTime @updatedAt
 }
 
@@ -82,8 +82,7 @@ model Promotion {
   id               Int       @id @default(autoincrement())
   eventId          Int
   discountVoucher  String
-  maxUsage         Int?
-  referralDiscount Int?
+  maxUsage         Int
   startDate        DateTime?
   endDate          DateTime?
   event            Event     @relation(fields: [eventId], references: [id])

@@ -184,14 +184,14 @@ export const signupUser = async (req: Request, res: Response) => {
           },
         });
 
-        // Menghapus data user point yang sudah datenya tua
-        const deletedUserPoints = await prisma.userpoint.deleteMany({
-          where: {
-            expiredDate: {
-              lt: today,
-            },
-          },
-        });
+        // // Menghapus data user point yang sudah datenya tua
+        // const deletedUserPoints = await prisma.userpoint.deleteMany({
+        //   where: {
+        //     expiredDate: {
+        //       lt: today,
+        //     },
+        //   },
+        // });
 
         let latestExpiredDate = today;
         if (oldUserPoints.length > 0) {
@@ -222,7 +222,7 @@ export const signupUser = async (req: Request, res: Response) => {
 
         // Dapatkan ID dari voucher yang baru saja dibuat
         const voucherId = voucher.id;
-
+        
         // update user voucher kedalam model userVoucher
         const updatedVoucher = await prisma.uservoucher.update({
           where: {
@@ -264,5 +264,51 @@ export const signOut = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.log(error);
+  }
+};
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const parsedId = parseInt(id);
+    if (!parsedId || isNaN(parsedId)) {
+      return res.status(400).json({
+        code: 400,
+        message: 'Invalid ID params',
+      });
+    }
+
+    const userId = await prisma.user.findFirst({
+      where: {
+        id: parsedId,
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        referral_number: true,
+        createdAt: true,
+      },
+    });
+
+    if (!userId) {
+      return res.status(404).json({
+        code: 404,
+        message: `User with id ${parsedId} not found`,
+      });
+    }
+
+    return res.status(200).json({
+      code: 200,
+      message: 'Success',
+      data: userId,
+    });
+  } catch (error: any) {
+    console.log('@@@ getEvent error :', error.message || error);
+    return res.status(500).json({
+      code: 500,
+      message: 'Internal Server Error',
+    });
   }
 };
