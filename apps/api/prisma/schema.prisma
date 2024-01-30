@@ -11,21 +11,21 @@ datasource db {
 }
 
 model User {
-  id              Int       @id @default(autoincrement())
-  username        String    @unique   
+  id              Int           @id @default(autoincrement())
+  username        String        @unique
   password        String
-  email           String    @unique
-  role            String    @default("user")
-  referral_number String    @unique
+  email           String        @unique
+  role            String        @default("user")
+  referral_number String        @unique
   points          Userpoint[]
   voucher         Uservoucher[]
   event           Event[]
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
-model Userpoint{
-  id          Int       @id @default(autoincrement())
+model Userpoint {
+  id          Int      @id @default(autoincrement())
   userId      Int
   username    String
   User        User     @relation(fields: [userId], references: [id])
@@ -34,16 +34,16 @@ model Userpoint{
 }
 
 model Uservoucher {
-  id                Int      @id @default(autoincrement())
-  userId            Int
-  username          String
-  user              User    @relation(fields: [userId], references: [id])
-  expiredDate       DateTime
-  voucherAmount     Float?
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  username      String
+  user          User     @relation(fields: [userId], references: [id])
+  expiredDate   DateTime
+  voucherAmount Float?
 }
 
 model Event {
-  id               Int          @id @default(autoincrement())
+  id               Int           @id @default(autoincrement())
   title            String
   eventDescription String
   price            Float
@@ -52,7 +52,7 @@ model Event {
   seatCount        Int
   transaction      Transaction[]
   rating           Rating[]
-  User             User?        @relation(fields: [userId], references: [id])
+  User             User?         @relation(fields: [userId], references: [id])
   userId           Int?
   promotions       Promotion[]
 }
@@ -67,15 +67,15 @@ model Rating {
 }
 
 model Transaction {
-  id                Int      @id @default(autoincrement())
-  eventId           Int
-  eventName         String  
-  finalPrice        Float?      
-  event             Event    @relation(fields: [eventId], references: [id])
-  ticketType        String   @default("bronze")
-  purchasedBy       String
-  dateEvent         DateTime
-  datePurchased     DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  eventId       Int
+  eventName     String
+  finalPrice    Float?
+  event         Event    @relation(fields: [eventId], references: [id])
+  ticketType    String   @default("bronze")
+  purchasedBy   String
+  dateEvent     DateTime
+  datePurchased DateTime @updatedAt
 }
 
 model Promotion {

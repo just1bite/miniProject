@@ -17,17 +17,18 @@ const SigninUser = () => {
             const response = await axios
             .post(apiSignInRoute, data, {
                 withCredentials: true,  
-                headers: { 'Content-Type' : 'application/json' },
+                headers: { 'Content-Type' : 'application/json',"Access-Control-Allow-Origin": "*"},
             })
             .then((res) => res.data)
             .catch ((error) => console.log(error));
         if (response.success === true){
-            router.push('/user/account');
+            router.push('/');
         }
         } catch (error) {
             console.log(error);
         }
     };
+
     return (
         <div className='flex flex-wrap bg-[#2A0134] items-center justify-center py-10'>
             <form onSubmit={signInUser}className={"flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000]"}>
