@@ -1,7 +1,6 @@
+'use client';
 import axios from 'axios';
-import { withCoalescedInvoke } from 'next/dist/lib/coalesced-function';
 import React, { useEffect, useState } from 'react';
-import { Response } from 'express';
 import Link from 'next/link';
 
 interface user {

@@ -5,7 +5,6 @@ import {
   signUpSchema,
   signinUser,
   signupUser,
-  getUserById,
 } from '../handler/auth.handler';
 import { inputValidator } from '@/common/helper/validator.helper';
 import authAccountmiddleware from '@/common/middleware/authAccountmiddleware';

@@ -45,11 +45,12 @@ export const Header = (props: HeaderProps) => {
     <header>
       <nav>
         <ul>
-          <li>
+          <div className="flex flex-col">
             <a href="/">Home</a>
-          </li>
+            <a href="/user/account">Account</a>
+          </div>
           <li>
-            <a href="/about">About</a>
+            <a href="/user/signup">Sign Up</a>
           </li>
           <li>
             {cookie ? (
@@ -58,9 +59,6 @@ export const Header = (props: HeaderProps) => {
               <a href="/user/signin">Sign In</a>
             )}
           </li>
-          {/* <li>
-            <button >Sign Out</button>
-          </li> */}
         </ul>
       </nav>
     </header>
