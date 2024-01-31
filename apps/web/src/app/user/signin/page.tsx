@@ -39,13 +39,13 @@ const SigninUser = () => {
         onSubmit={signInUser}
         className={'flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000]'}
       >
-        <h1>Sign in</h1>
+        <h1 className="justify-center text-white">Sign in</h1>
         <input
           type="email"
           id="email"
           name="email"
           placeholder="email"
-          className="text-white font-bold bg-[#FFFFFF] border-b-2"
+          className="text-white font-bold bg-[#000] border-b-2"
           value={data.email}
           onChange={(e) => setData({ ...data, email: e.target.value })}
         />
@@ -55,7 +55,7 @@ const SigninUser = () => {
           id="password"
           name="password"
           placeholder="password"
-          className="text-white font-bold bg-[#FFFFFF] border-b-2"
+          className="text-white font-bold bg-[#000] border-b-2"
           value={data.password}
           onChange={(e) => setData({ ...data, password: e.target.value })}
         />

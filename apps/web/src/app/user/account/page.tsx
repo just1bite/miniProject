@@ -1,46 +1,65 @@
-// 'use client'
-// import axios from 'axios';
-// import { useRouter } from 'next/navigation';
-// import { FormEvent, useState } from 'react';
+'use client';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 
-// const apiUserAccount = 'http://localhost:8000/api/auth/signin';
+interface user {
+  id: '';
+  username: '';
+  points: '';
+  voucher: '';
+}
 
-// const userAccount = () => {
-//     const [data, setData] = useState ({
-//         email:'',
-//         password:'',
-//     });
-//     const router = useRouter();
-//     const userAccount = async (e: FormEvent) => {
-//         e.preventDefault();
-//         try {
-//             const response = await axios
-//             .post(apiUserAccount, data, {
-//                 withCredentials: true,  
-//                 headers: { 'Content-Type' : 'application/json' },
-//             })
-//             .then((res) => res.data)
-//             .catch ((error) => console.log(error));
-//         if (response.success === true){
-//             router.push('/user/account');
-//         }
-//         } catch (error) {
-//             console.log(error);
-//         }
-//     };
+export default function userPage(props: HeaderProps) {
+  const { cookie } = props;
+  const userDetail = 'http://localhost:8000/api/auth/:id';
+  const token = 'api-token';
+  const [user, setUser] = useState<user | null>(null);
 
-//     return (
-//         <div>
-          
-//         </div>
-        
+  useEffect(() => {
+    const userDetail = async () => {
+      try {
+        if (token) {
+          const response = await axios.get(
+            'http://localhost:8000/api/auth/:id',
+            {
+              withCredentials: true,
+            },
+          );
+          setUser(response.data);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    userDetail();
+  }, [cookie]);
+  axios.get(userDetail);
 
-
-
-
-
-
-
-
-//  )
-// }
+  return (
+    <div className="bg-[red]">
+      {!cookie && user ? (
+        <div>
+          <div>
+            <h1></h1>
+            <h1></h1>
+          </div>
+        </div>
+      ) : (
+        <div>
+          {cookie ? (
+            ' . . . '
+          ) : (
+            <div>
+              Unauthorized{' '}
+              <Link className="text-orange-800" href={'/user/signin'}>
+                Sign In
+              </Link>{' '}
+              Required
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
