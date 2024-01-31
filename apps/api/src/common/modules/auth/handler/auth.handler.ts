@@ -6,9 +6,20 @@ import { generateToken } from '@/common/helper/jwt.helper';
 import { generateReferral } from '@/common/helper/referral.helper';
 import prisma from '@/prisma';
 
+interface signinUserPayload {
+  email: string;
+  password: string;
+}
+interface signupUserPayload {
+  email : string
+  password : string
+  username : string
+  referralCode : string
+  role : string
+}
 export const signinUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password }: signinUserPayload = req.body;
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -71,7 +82,7 @@ export const signUpSchema = object({
 });
 export const signupUser = async (req: Request, res: Response) => {
   try {
-    const { email, password, username, referralCode, role } = req.body;
+    const { email, password, username, referralCode, role }:signupUserPayload = req.body;
 
     const hashedPassword = hash(password);
     const userReferral = generateReferral(username);
