@@ -6,9 +6,21 @@ import { generateToken } from '@/common/helper/jwt.helper';
 import { generateReferral } from '@/common/helper/referral.helper';
 import prisma from '@/prisma';
 
+export interface signinPayload {
+  email: string;
+  password: string;
+}
+export interface signupPayload {
+  email: string;
+  password: string;
+  username: string;
+  referralCode?: string;
+  role?: string;
+}
+
 export const signinUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } : signinPayload = req.body;
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -55,14 +67,6 @@ export const signinUser = async (req: Request, res: Response) => {
     console.log(error);
   }
 };
-
-export interface signupPayload {
-  email: string;
-  password: string;
-  username: string;
-  referralCode?: string;
-  role?: string;
-}
 
 export const signUpSchema = object({
   body: object({
@@ -260,7 +264,7 @@ export const signOut = async (req: Request, res: Response) => {
     return res.status(200).json({
       code: 200,
       // success: true,
-      message: 'silahkan kembali',
+      message: 'signout success',
     });
   } catch (error) {
     console.log(error);

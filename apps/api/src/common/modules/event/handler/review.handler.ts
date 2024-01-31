@@ -2,10 +2,15 @@ import { Request, Response } from 'express';
 import prisma from '@/prisma';
 import { verifyToken } from '@/common/helper/jwt.helper';
 
+export interface ratingPayload {
+  rating: number;
+  review: string;
+}
+
 export const addRatingAndReview = async (req: Request, res: Response) => {
   try {
     const { eventid } = req.params;
-    const { rating, review } = req.body;
+    const { rating, review }: ratingPayload = req.body;
     const userToken = req.cookies['api-token'];
 
     // Validasi token dan mendapatkan userId dari token
@@ -47,7 +52,6 @@ export const addRatingAndReview = async (req: Request, res: Response) => {
         message: 'You have already rated this event',
       });
     }
-
 
     // Tambahkan rating dan review ke database
     const newRating = await prisma.rating.create({

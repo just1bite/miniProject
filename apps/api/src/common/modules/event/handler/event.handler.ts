@@ -24,7 +24,9 @@ export interface patchEventPayload {
   eventDate?: Date;
   eventLocation?: string;
   seatCount?: number;
-  tiketType?: string;
+  isFree?: boolean;
+  createPromotionIfNeeded?: boolean;
+  discountVoucher: string;
 }
 
 export interface PromotionCreateInput {
@@ -35,6 +37,17 @@ export interface PromotionCreateInput {
   startDate?: Date;
   endDate?: Date;
 }
+
+export interface PromotionVoucherDiscount {
+  createPromotionIfNeeded: boolean;
+  discountVoucher: string;
+  maxUsage: number;
+}
+
+// export interface TransactionPayload {
+//   pointsToRedeem: number;
+//   countSeat: number;
+// }
 
 export const eventPayload = object({
   body: object({
@@ -91,7 +104,7 @@ export const createEvent = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      isFree, // ticketTypes, //ticketTier
+      isFree,
     }: eventPayload = req.body;
     if (
       !title ||
@@ -120,7 +133,11 @@ export const createEvent = async (req: Request, res: Response) => {
     });
 
     // Membuat promosi jika diperlukan
-    const { createPromotionIfNeeded, discountVoucher, maxUsage } = req.body;
+    const {
+      createPromotionIfNeeded,
+      discountVoucher,
+      maxUsage,
+    }: PromotionVoucherDiscount = req.body;
     if (createPromotionIfNeeded) {
       await prisma.promotion.createMany({
         data: [
@@ -219,8 +236,8 @@ export const patchEventById = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      ticketType,
-    } = req.body;
+      isFree,
+    }: patchEventPayload = req.body;
 
     const parsedId = parseInt(id);
     if (!parsedId || isNaN(parsedId)) {
@@ -251,7 +268,7 @@ export const patchEventById = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      ticketType,
+      isFree,
     };
 
     const patchedEvent = await prisma.event.update({
@@ -263,7 +280,7 @@ export const patchEventById = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       code: 200,
-      message: 'Success',
+      message: 'Success updated',
       data: patchedEvent,
     });
   } catch (error: any) {
@@ -325,7 +342,7 @@ export const deleteEventById = async (req: Request, res: Response) => {
 export const createTransaction = async (req: Request, res: Response) => {
   try {
     const userToken = req.cookies['api-token'];
-    const { pointsToRedeem, countSeat } = req.body;
+    const { pointsToRedeem, countSeat, discountVoucher } = req.body; //: TransactionPayload
     const { eventid } = req.params;
 
     // Validate token
@@ -364,13 +381,6 @@ export const createTransaction = async (req: Request, res: Response) => {
       },
     });
 
-    if (!userPoint || userPoint.amount < pointsToRedeem) {
-      return res.status(400).json({
-        code: 400,
-        message: 'Not enough points to redeem',
-      });
-    }
-
     // Calculate the discounted price after using points
     const discountedPrice = event.price - pointsToRedeem;
     const updatedPricePoint = Math.max(discountedPrice, 0);
@@ -383,13 +393,24 @@ export const createTransaction = async (req: Request, res: Response) => {
       },
     });
 
+    const isVoucherValid = promotions.some((promotion) => {
+      return promotion.discountVoucher === discountVoucher;
+    });
+
+    let updatedPromotion = 0;
+
+    if (isVoucherValid) {
+      const usePromotionPrice = (event.price * 10) / 100;
+      updatedPromotion = Math.max(usePromotionPrice, 0);
+    }
+    console.log('updatedPromotion', updatedPromotion);
     const totalMaxUsage = promotions.reduce(
       (acc, promo) => acc + promo.maxUsage,
       0,
     );
 
     // Now, you can check if the total maxUsage is exceeded
-    if (totalMaxUsage <= 0) {
+    if (totalMaxUsage < 0) {
       return res.status(400).json({
         code: 400,
         message: 'Invalid voucher code or max usage exceeded',
@@ -398,11 +419,14 @@ export const createTransaction = async (req: Request, res: Response) => {
 
     // Calculate the discounted price after using promotion
     const usePromotionPrice = (event.price * 10) / 100;
-    const updatedPromotion = Math.max(usePromotionPrice, 0);
+    updatedPromotion = Math.max(usePromotionPrice, 0);
     console.log('updatePromotion', updatedPromotion);
 
     // Update user's pointAmount after redeeming points
-    const redeemPoint = Math.max(userPoint.amount - pointsToRedeem, 0);
+    const redeemPoint = Math.max(
+      userPoint?.amount !== undefined ? userPoint.amount - pointsToRedeem : 0,
+      0,
+    );
 
     if (redeemPoint) {
       await prisma.userpoint.findFirst({
