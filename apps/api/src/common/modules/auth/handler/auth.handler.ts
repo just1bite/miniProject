@@ -8,7 +8,7 @@ import prisma from '@/prisma';
 
 export const signinUser = async (req: Request, res: Response) => {
   try {
-    const { email, password }: signinPayload = req.body;
+    const { email, password } = req.body;
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -71,8 +71,7 @@ export const signUpSchema = object({
 });
 export const signupUser = async (req: Request, res: Response) => {
   try {
-    const { email, password, username, referralCode, role }: signupPayload =
-      req.body;
+    const { email, password, username, referralCode, role } = req.body;
 
     const hashedPassword = hash(password);
     const userReferral = generateReferral(username);

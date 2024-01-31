@@ -417,11 +417,6 @@ export const createTransaction = async (req: Request, res: Response) => {
       });
     }
 
-    // Calculate the discounted price after using promotion
-    const usePromotionPrice = (event.price * 10) / 100;
-    updatedPromotion = Math.max(usePromotionPrice, 0);
-    console.log('updatePromotion', updatedPromotion);
-
     // Update user's pointAmount after redeeming points
     const redeemPoint = Math.max(
       userPoint?.amount !== undefined ? userPoint.amount - pointsToRedeem : 0,
