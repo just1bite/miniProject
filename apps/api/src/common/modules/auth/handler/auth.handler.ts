@@ -6,6 +6,14 @@ import { generateToken } from '@/common/helper/jwt.helper';
 import { generateReferral } from '@/common/helper/referral.helper';
 import prisma from '@/prisma';
 
+export interface accountPayload {
+  email: string;
+  username: string;
+  referralCode?: string;
+  role?: string;
+  eventId: number;
+}
+
 export const signinUser = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -43,7 +51,7 @@ export const signinUser = async (req: Request, res: Response) => {
       });
     }
 
-    console.log(req.cookies);
+    // console.log(req.cookies);
 
     return res.status(200).json({
       code: 200,
@@ -222,7 +230,7 @@ export const signupUser = async (req: Request, res: Response) => {
 
         // Dapatkan ID dari voucher yang baru saja dibuat
         const voucherId = voucher.id;
-        
+
         // update user voucher kedalam model userVoucher
         const updatedVoucher = await prisma.uservoucher.update({
           where: {
@@ -266,6 +274,7 @@ export const signOut = async (req: Request, res: Response) => {
     console.log(error);
   }
 };
+
 export const getUserById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

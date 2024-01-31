@@ -12,7 +12,6 @@ export const Header = (props: HeaderProps) => {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const clientCookie = Cookies.get('api-token');
-  console.log(clientCookie);
 
   useEffect(() => {
     if (cookie) {
@@ -22,9 +21,6 @@ export const Header = (props: HeaderProps) => {
 
   const handleSignOut = async () => {
     try {
-      // Simulate the sign-out API call
-      // Replace this with your actual sign-out logic on the server side
-
       const apiSignOutRoute = 'http://localhost:8000/api/auth/signout';
       const response = await fetch(apiSignOutRoute, {
         method: 'POST',
@@ -32,15 +28,12 @@ export const Header = (props: HeaderProps) => {
       });
 
       if (response.ok) {
-        // Remove the cookie on the client side
         Cookies.remove('api-token');
         setIsAuthenticated(false);
 
-        // Redirect to the sign-in page
         router.push('/user/signin');
         router.refresh();
       } else {
-        // Handle sign-out failure, log error, etc.
         console.error('Sign-out failed:', response.status, response.statusText);
       }
     } catch (error) {

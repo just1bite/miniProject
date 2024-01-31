@@ -195,7 +195,7 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import CurrencyInput from 'react-currency-input-field';
 
-const apiEventCreate = 'https://localhost:8000/api/event/create';
+const apiEventCreate = 'http://localhost:8000/api/event/create';
 
 const eventCreate = () => {
   const [data, setData] = useState({
@@ -252,7 +252,7 @@ const eventCreate = () => {
   };
 
   return (
-    <div className="bg-[#2A0134]">
+    <div className="flex flex-wrap bg-[#2A0134] items-center justify-center py-10">
       <form
         onSubmit={eventCreate}
         className={'flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000]'}
@@ -383,7 +383,9 @@ const eventCreate = () => {
             </label>
           </div>
         )}
-        <button type="submit">Create Event</button>
+        <button className="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded">
+          Create
+        </button>
       </form>
     </div>
   );

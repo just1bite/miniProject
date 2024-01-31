@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  getUserById,
   signOut,
   signUpSchema,
   signinUser,
@@ -14,7 +15,6 @@ const authRouter = Router();
 authRouter.post('/signin', signinUser);
 authRouter.post('/signup', inputValidator(signUpSchema), signupUser);
 authRouter.post('/signout', signOut);
-authRouter.get('/profil');
 authRouter.get('/:id', authAccountmiddleware, getUserById);
 
 export default authRouter;
