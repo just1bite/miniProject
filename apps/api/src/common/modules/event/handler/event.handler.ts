@@ -24,7 +24,9 @@ export interface patchEventPayload {
   eventDate?: Date;
   eventLocation?: string;
   seatCount?: number;
-  tiketType?: string;
+  isFree?: boolean;
+  createPromotionIfNeeded?: boolean;
+  discountVoucher: string;
 }
 
 export interface PromotionCreateInput {
@@ -35,6 +37,17 @@ export interface PromotionCreateInput {
   startDate?: Date;
   endDate?: Date;
 }
+
+export interface PromotionVoucherDiscount {
+  createPromotionIfNeeded: boolean;
+  discountVoucher: string;
+  maxUsage: number;
+}
+
+// export interface TransactionPayload {
+//   pointsToRedeem: number;
+//   countSeat: number;
+// }
 
 export const eventPayload = object({
   body: object({
@@ -91,7 +104,7 @@ export const createEvent = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      isFree, // ticketTypes, //ticketTier
+      isFree,
     }: eventPayload = req.body;
     if (
       !title ||
@@ -120,16 +133,20 @@ export const createEvent = async (req: Request, res: Response) => {
     });
 
     // Membuat promosi jika diperlukan
-    const { createPromotionIfNeeded, discountVoucher, startDate, endDate } =
-      req.body;
+    const {
+      createPromotionIfNeeded,
+      discountVoucher,
+      maxUsage,
+    }: PromotionVoucherDiscount = req.body;
     if (createPromotionIfNeeded) {
       await prisma.promotion.createMany({
         data: [
           await createPromotion({
             eventId: createEvent.id,
             discountVoucher,
-            startDate,
-            endDate,
+            maxUsage,
+            startDate: eventDate,
+            // endDate,
           }),
         ],
       });
@@ -182,7 +199,6 @@ export const getEventById = async (req: Request, res: Response) => {
     const userEvent = await prisma.event.findFirst({
       where: {
         id: parsedId,
-        userId: parsedId,
       },
       include: {
         promotions: true,
@@ -220,8 +236,8 @@ export const patchEventById = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      ticketType,
-    } = req.body;
+      isFree,
+    }: patchEventPayload = req.body;
 
     const parsedId = parseInt(id);
     if (!parsedId || isNaN(parsedId)) {
@@ -252,7 +268,7 @@ export const patchEventById = async (req: Request, res: Response) => {
       eventDate,
       eventLocation,
       seatCount,
-      ticketType,
+      isFree,
     };
 
     const patchedEvent = await prisma.event.update({
@@ -264,7 +280,7 @@ export const patchEventById = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       code: 200,
-      message: 'Success',
+      message: 'Success updated',
       data: patchedEvent,
     });
   } catch (error: any) {
@@ -326,7 +342,7 @@ export const deleteEventById = async (req: Request, res: Response) => {
 export const createTransaction = async (req: Request, res: Response) => {
   try {
     const userToken = req.cookies['api-token'];
-    const { pointsToRedeem, ticketType } = req.body;
+    const { pointsToRedeem, countSeat, discountVoucher } = req.body; //: TransactionPayload
     const { eventid } = req.params;
 
     // Validate token
@@ -355,63 +371,8 @@ export const createTransaction = async (req: Request, res: Response) => {
       });
     }
 
-    let transaction;
-    transaction = await prisma.$transaction(async (prisma: any) => {
-      // Create the transaction
-      const createdTransaction = await prisma.transaction.create({
-        data: {
-          eventId: eventId,
-          eventName: event.title,
-          dateEvent: event.eventDate,
-          ticketType,
-          finalPrice: event.price,
-          purchasedBy: verifiedToken.data.username,
-        },
-      });
-
-      // Get user point
-      const userPoint = await prisma.userpoint.findFirst({
-        where: {
-          userId: id,
-        },
-        orderBy: {
-          amount: 'desc',
-        },
-      });
-
-      if (userPoint) {
-        const pointAmountUser = userPoint.amount;
-        if (pointAmountUser < pointsToRedeem) {
-          // Calculate total points of the user
-          return res.status(400).json({
-            code: 400,
-            message: 'Not enough points to redeem',
-          });
-        }
-
-        // Calculate the discounted price after using points
-        const discountedPrice = createdTransaction.finalPrice - pointsToRedeem;
-        const updatedPrice = Math.max(discountedPrice, 0);
-
-        // Update the transaction's finalPrice with the discounted amount
-        const updatedTransaction = await prisma.transaction.update({
-          where: {
-            id: createdTransaction.id,
-          },
-          data: {
-            finalPrice: updatedPrice,
-          },
-        });
-      } else {
-        return res.status(404).json({
-          code: 404,
-          message: 'User points not found',
-        });
-      }
-    });
-
-    //Update user's pointAmount after redeeming points
-    const existingPoints = await prisma.userpoint.findFirst({
+    // Get user point
+    const userPoint = await prisma.userpoint.findFirst({
       where: {
         userId: id,
       },
@@ -419,44 +380,149 @@ export const createTransaction = async (req: Request, res: Response) => {
         amount: 'desc',
       },
     });
-    const highestAmount = existingPoints ? existingPoints.amount : 0;
-    const updatedExistingPoints = await prisma.userpoint.updateMany({
+
+    // Calculate the discounted price after using points
+    const discountedPrice = event.price - (event.price - pointsToRedeem);
+    const updatedPricePoint = Math.max(discountedPrice, 0);
+    console.log('updatedPricePoint', updatedPricePoint);
+
+    // Get Promotion
+    let usePromotionPrice = 0;
+
+    if (req.body.discountVoucher) {
+      // Get Promotion
+      const promotions = await prisma.promotion.findMany({
+        where: {
+          discountVoucher: req.body.discountVoucher,
+        },
+      });
+
+      if (promotions.length === 0) {
+        return res.status(400).json({
+          code: 400,
+          message: 'Invalid voucher code or max usage exceeded',
+        });
+      }
+
+      const totalMaxUsage = promotions.reduce(
+        (acc, promo) => acc + promo.maxUsage,
+        0,
+      );
+
+      // Now, you can check if the total maxUsage is exceeded
+      if (totalMaxUsage < 0) {
+        return res.status(400).json({
+          code: 400,
+          message: 'Invalid voucher code or max usage exceeded',
+        });
+      }
+
+      // Calculate the discounted price after using promotion
+      usePromotionPrice = event.price - (event.price - event.price * 0.1);
+    }
+
+    const updatedPromotion = Math.max(usePromotionPrice, 0);
+    console.log('updatePromotion', updatedPromotion);
+
+    // Update user's pointAmount after redeeming points
+    const redeemPoint = Math.max(
+      userPoint?.amount !== undefined ? userPoint.amount - pointsToRedeem : 0,
+      0,
+    );
+
+    if (redeemPoint) {
+      await prisma.userpoint.findFirst({
+        where: {
+          userId: id,
+        },
+      });
+      await prisma.userpoint.updateMany({
+        data: {
+          amount: redeemPoint,
+        },
+      });
+    }
+    console.log('redeemPoint', redeemPoint);
+
+    //get Voucher
+    let updatedVoucher = 0;
+    const voucher = await prisma.uservoucher.findMany({
       where: {
         userId: id,
       },
-      data: {
-        amount: highestAmount - pointsToRedeem,
-      },
     });
 
-    const currentSeatCount = event.seatCount;
-    // Calculate the remaining seatCount after the transaction
-    const remainingSeatCount = currentSeatCount - 1;
-    if (remainingSeatCount < 0) {
-      return res.status(400).json({
-        code: 400,
-        message: 'Not enough seats available',
-      });
+    if (voucher.length > 0) {
+      updatedVoucher = event.price - (event.price - event.price * 0.1);
     }
-    //Update the event's seatCount with the remaining amount
-    const updatedSeat = await prisma.event.update({
+    console.log('updatedVoucher', updatedVoucher);
+
+    // Check if updatedVoucher is NaN, if yes, set it to 0
+    const validUpdatedVoucher = isNaN(updatedVoucher) ? 0 : updatedVoucher;
+
+    // Check if updatedPromotion is NaN, if yes, set it to 0
+    const validUpdatedPromotion = isNaN(updatedPromotion)
+      ? 0
+      : updatedPromotion;
+    console.log('updatePromotion', updatedPromotion);
+
+    // Check if pointsToRedeem is NaN, if yes, set it to 0
+    const validPointsToRedeem = isNaN(pointsToRedeem) ? 0 : pointsToRedeem;
+
+    // Calculate the final price with non-NaN values
+    const finalPrice =
+      event.price -
+      (Math.min(event.price, validUpdatedVoucher) +
+        Math.min(event.price, validUpdatedPromotion) +
+        Math.min(event.price, validPointsToRedeem));
+
+    console.log('finalprice', finalPrice);
+
+    // Set a default value for countSeat if not provided
+    const updatedCountSeat = countSeat || 1;
+
+    // Calculate the updated seatCount, ensuring it doesn't go below zero
+    const updatedEventSeat = await prisma.event.update({
       where: {
         id: eventId,
       },
       data: {
-        seatCount: remainingSeatCount,
+        seatCount: Math.max(0, event.seatCount - updatedCountSeat),
+      },
+    });
+
+    // Check if seatCount is less than 0 after the update
+    if (updatedEventSeat.seatCount <= 0) {
+      return res.status(400).json({
+        code: 400,
+        message: 'Max seat count available not found',
+      });
+    }
+
+    // Continue with the rest of your code...
+
+    // Create transaction
+    const createdTransaction = await prisma.transaction.create({
+      data: {
+        eventId: eventId,
+        eventName: event.title,
+        dateEvent: event.eventDate,
+        finalPrice: finalPrice,
+        countSeat: updatedEventSeat.seatCount,
+        purchasedBy: verifiedToken.data.username,
       },
     });
 
     return res.status(200).json({
       code: 200,
-      message: 'transaction successfully',
+      message: 'Transaction successful',
+      transaction: createdTransaction,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({
       code: 500,
-      message: 'transaction fail',
+      message: 'Transaction failed',
     });
   }
 };
@@ -468,100 +534,7 @@ export const createPromotion = async (
     eventId: data.eventId,
     discountVoucher: data.discountVoucher || '',
     maxUsage: data.maxUsage,
-    referralDiscount: data.referralDiscount,
     startDate: data.startDate,
     endDate: data.endDate,
   };
-};
-
-export const applyReferralDiscount = async (req: Request, res: Response) => {
-  try {
-    const userToken = req.cookies['api-token'];
-    const { referralNumber } = req.body;
-    const { eventid } = req.params;
-
-    // Validasi token
-    const verifiedToken = verifyToken(userToken);
-    if (!verifiedToken.isValid) {
-      return res.status(401).json({
-        code: 401,
-        message: 'Invalid token',
-      });
-    }
-    const userId = verifiedToken.data.id;
-    const id = parseInt(eventid);
-
-    // Dapatkan informasi pengguna
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        code: 404,
-        message: 'User not found',
-      });
-    }
-
-    // Dapatkan informasi acara
-    const event = await prisma.event.findUnique({
-      where: {
-        id: id,
-      },
-    });
-
-    if (!event) {
-      return res.status(404).json({
-        code: 404,
-        message: 'Event not found',
-      });
-    }
-
-    // Cek apakah referralNumber valid
-    const isReferralNumberValid = async (
-      referralNumber: string,
-    ): Promise<boolean> => {
-      try {
-        const existingUser = await prisma.user.findUnique({
-          where: {
-            referral_number: referralNumber,
-          },
-        });
-        // If the user with the provided referral number exists, it's considered valid
-        return !!existingUser;
-      } catch (error) {
-        console.error('Error checking referral number validity:', error);
-        return false;
-      }
-    };
-
-    if (!referralNumber) {
-      return res.status(404).json({
-        code: 404,
-        message: `Invalid Referral Number`,
-      });
-    }
-
-    const isReferralValid = await isReferralNumberValid(referralNumber);
-    const referralDiscountPercentage = 10; // 10% referral discount
-    // Hitung harga akhir setelah penerapan diskon referral
-    const finalPrice =
-      event.price - (event.price * referralDiscountPercentage) / 100;
-
-    return res.status(200).json({
-      code: 200,
-      message: 'Referral discount applied successfully',
-      data: {
-        finalPrice,
-      },
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      code: 500,
-      message: 'Internal Server Error',
-    });
-  }
 };

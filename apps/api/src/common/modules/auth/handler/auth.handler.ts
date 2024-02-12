@@ -158,8 +158,7 @@ export const signupUser = async (req: Request, res: Response) => {
             amount: 0,
           },
         });
-        //mencari jumlah point paling besar dari user id
-        const existingPoints = await prisma.userpoint.findFirst({
+        const existingPoints = await prisma.userpoint.findMany({
           where: {
             userId: authorReferral?.id,
           },
@@ -167,11 +166,12 @@ export const signupUser = async (req: Request, res: Response) => {
             amount: 'desc',
           },
         });
-        const highestAmount = existingPoints ? existingPoints.amount : 0;
+
+        const highestAmount =
+          existingPoints.length > 0 ? existingPoints[0].amount : 0;
         const updatedAmount = highestAmount + 10000;
 
         const today = new Date();
-        // Mendapatkan data yang ingin dihapus dan menyimpan expiredDate yang paling baru
         const oldUserPoints = await prisma.userpoint.findMany({
           where: {
             expiredDate: {
@@ -183,14 +183,13 @@ export const signupUser = async (req: Request, res: Response) => {
           },
         });
 
-        // Menghapus data user point yang sudah datenya tua
-        const deletedUserPoints = await prisma.userpoint.deleteMany({
-          where: {
-            expiredDate: {
-              lt: today,
-            },
-          },
-        });
+        // const deletedUserPoints = await prisma.userpoint.deleteMany({
+        //   where: {
+        //     expiredDate: {
+        //       lt: today,
+        //     },
+        //   },
+        // });
 
         let latestExpiredDate = today;
         if (oldUserPoints.length > 0) {
@@ -198,14 +197,13 @@ export const signupUser = async (req: Request, res: Response) => {
             oldUserPoints[oldUserPoints.length - 1].expiredDate;
         }
 
-        // update user yang referral nya digunakan dengan menambahkan 10.000
-        const totalPointsForReferrer = existingPoints + 10000;
-        const updatedAuthor = await prisma.userpoint.update({
+        const totalPointsForReferrer = updatedAmount;
+        const updatedAuthor = await prisma.userpoint.updateMany({
           where: {
-            id: point.id,
+            userId: authorReferral.id,
           },
           data: {
-            amount: updatedAmount,
+            amount: totalPointsForReferrer,
             expiredDate: latestExpiredDate,
           },
         });

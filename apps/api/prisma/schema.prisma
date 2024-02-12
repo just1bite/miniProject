@@ -72,7 +72,7 @@ model Transaction {
   eventName         String  
   finalPrice        Float?      
   event             Event    @relation(fields: [eventId], references: [id])
-  ticketType        String   @default("bronze")
+  countSeat         Int   
   purchasedBy       String
   dateEvent         DateTime
   datePurchased     DateTime @updatedAt

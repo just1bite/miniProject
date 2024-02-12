@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  applyReferralDiscount,
+  // applyReferralDiscount,
   createEvent,
   createTransaction,
   // createTicketType,
@@ -30,7 +30,7 @@ eventRouter.patch('/update/:id', authorizationMiddleware, patchEventById);
 eventRouter.delete('/delete/:id', authorizationMiddleware, deleteEventById);
 // eventRouter.post('/:eventid', authorizationMiddleware, createTicketType);
 eventRouter.post('/:eventid/rating', addRatingAndReview);
-eventRouter.post('/:eventid/referral', applyReferralDiscount);
+// eventRouter.post('/:eventid/referral', applyReferralDiscount);
 eventRouter.post('/:eventid/transaction', createTransaction);
 
 export default eventRouter;
