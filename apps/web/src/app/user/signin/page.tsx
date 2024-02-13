@@ -34,40 +34,67 @@ const SigninUser = () => {
   };
 
   return (
-    <div className="flex flex-wrap bg-[#2A0134] items-center justify-center py-10">
-      <form
-        onSubmit={signInUser}
-        className={'flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000]'}
-      >
-        <h1 className="justify-center text-white">Sign in</h1>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          placeholder="email"
-          className="text-white font-bold bg-[#000] border-b-2"
-          value={data.email}
-          onChange={(e) => setData({ ...data, email: e.target.value })}
-        />
-
-        <input
-          type="password"
-          id="password"
-          name="password"
-          placeholder="password"
-          className="text-white font-bold bg-[#000] border-b-2"
-          value={data.password}
-          onChange={(e) => setData({ ...data, password: e.target.value })}
-        />
-
-        <button
-          className="bg-white text-black font-bold rounded-md py-2"
-          type="submit"
-        >
-          Submit
-        </button>
-      </form>
-    </div>
+    <main className="w-full h-screen flex flex-col items-center justify-center px-4">
+      <div className="max-w-sm w-full text-gray-600">
+        <div className="text-center">
+          <img
+            src="https://floatui.com/logo.svg"
+            width={150}
+            className="mx-auto"
+          />
+          <div className="mt-5 space-y-2">
+            <h3 className="text-gray-800 text-2xl font-bold sm:text-3xl">
+              Log in to your account
+            </h3>
+            <p className="">
+              Don't have an account?{' '}
+              <a
+                href="/user/signup"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Sign up
+              </a>
+            </p>
+          </div>
+        </div>
+        <form onSubmit={signInUser} className="mt-8 space-y-5">
+          <div>
+            <label className="font-medium">Email</label>
+            <input
+              type="email"
+              required
+              className="w-full mt-2 px-3 py-2 text-gray-500 bg-transparent outline-none border focus:border-indigo-600 shadow-sm rounded-lg"
+              id="email"
+              name="email"
+              placeholder="email"
+              value={data.email}
+              onChange={(e) => setData({ ...data, email: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="font-medium">Password</label>
+            <input
+              type="password"
+              required
+              className="w-full mt-2 px-3 py-2 text-gray-500 bg-transparent outline-none border focus:border-indigo-600 shadow-sm rounded-lg"
+              id="password"
+              name="password"
+              placeholder="password"
+              value={data.password}
+              onChange={(e) => setData({ ...data, password: e.target.value })}
+            />
+          </div>
+          <button className="w-full px-4 py-2 text-white font-medium bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-600 rounded-lg duration-150">
+            Sign in
+          </button>
+          <div className="text-center">
+            <a href="javascript:void(0)" className="hover:text-indigo-600">
+              Forgot password?
+            </a>
+          </div>
+        </form>
+      </div>
+    </main>
   );
 };
 
