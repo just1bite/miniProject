@@ -404,12 +404,14 @@ export const createTransaction = async (req: Request, res: Response) => {
         });
       }
 
-      const totalMaxUsage = promotions.reduce(
-        (acc, promo) => acc + promo.maxUsage,
-        0,
-      );
+      const totalMaxUsage = promotions.reduce((acc, promo) => {
+        if (promo && promo.maxUsage) {
+          return acc + promo.maxUsage;
+        } else {
+          return acc;
+        }
+      }, 0);
 
-      // Now, you can check if the total maxUsage is exceeded
       if (totalMaxUsage < 0) {
         return res.status(400).json({
           code: 400,

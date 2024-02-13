@@ -10,40 +10,42 @@ const SigninUser = () => {
     email: '',
     password: '',
   });
-  const [error, setError] = useState('');
-
   const router = useRouter();
-
   const signInUser = async (e: FormEvent) => {
     e.preventDefault();
-
     try {
-      const response = await axios.post(apiSignInRoute, data, {
-        withCredentials: true,
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (response.data.success) {
-        router.replace('/home');
-      } else {
-        setError('Sign-in failed. Check your credentials.');
+      const response = await axios
+        .post(apiSignInRoute, data, {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
+        .then((res) => res.data)
+        .catch((error) => console.log(error));
+      if (response.success === true) {
+        router.push('/');
+        router.refresh();
       }
     } catch (error) {
-      console.error('Error during sign-in:', error);
-      setError('An error occurred. Please try again later.');
+      console.log(error);
     }
   };
 
   return (
-    <div>
-      <form onSubmit={signInUser}>
-        <h1>Sign in</h1>
+    <div className="flex flex-wrap bg-[#2A0134] items-center justify-center py-10">
+      <form
+        onSubmit={signInUser}
+        className={'flex flex-col text-2x gap-5 rounded-md p-10 bg-[#000]'}
+      >
+        <h1 className="justify-center text-white">Sign in</h1>
         <input
           type="email"
           id="email"
           name="email"
-          placeholder="Email"
-          className="text-white font-bold bg-[#FFFFFF] border-b-2"
+          placeholder="email"
+          className="text-white font-bold bg-[#000] border-b-2"
           value={data.email}
           onChange={(e) => setData({ ...data, email: e.target.value })}
         />
@@ -52,8 +54,8 @@ const SigninUser = () => {
           type="password"
           id="password"
           name="password"
-          placeholder="Password"
-          className="text-white font-bold bg-[#FFFFFF] border-b-2"
+          placeholder="password"
+          className="text-white font-bold bg-[#000] border-b-2"
           value={data.password}
           onChange={(e) => setData({ ...data, password: e.target.value })}
         />
@@ -64,8 +66,6 @@ const SigninUser = () => {
         >
           Submit
         </button>
-
-        {error && <p className="text-red-500">{error}</p>}
       </form>
     </div>
   );
