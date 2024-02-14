@@ -5,6 +5,8 @@ import { compare, hash } from '@/common/helper/bcrypt.helper';
 import { generateToken } from '@/common/helper/jwt.helper';
 import { generateReferral } from '@/common/helper/referral.helper';
 import prisma from '@/prisma';
+import jwt from 'jsonwebtoken';
+import Cookies from 'js-cookie';
 
 export const signinUser = async (req: Request, res: Response) => {
   try {
@@ -260,5 +262,74 @@ export const signOut = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.log(error);
+  }
+};
+
+export const selectionRole = async (req: Request, res: Response) => {
+  try {
+    const { selectedRole } = req.body;
+
+    // Validate the selected role to ensure it is either 'user' or 'eventOrganizer'
+    if (!['user', 'eventOrganizer'].includes(selectedRole)) {
+      return res.status(400).json({
+        code: 400,
+        message:
+          'Invalid selected role. Please choose either "user" or "eventOrganizer".',
+      });
+    }
+
+    // Check if the user is authenticated by verifying the token
+    const userToken = req.cookies['api-token'];
+    if (!userToken) {
+      return res.status(401).json({
+        code: 401,
+        message: 'Unauthorized. Login required.',
+      });
+    }
+
+    // Function to get user ID from the token
+    const getUserIdFromToken = (token: string): number | null => {
+      try {
+        const decodedToken = jwt.verify(token, 'secret') as {
+          id: number;
+        };
+        return decodedToken.id;
+      } catch (error) {
+        return null;
+      }
+    };
+
+    // Get user ID from the token
+    const userId = getUserIdFromToken(userToken);
+    if (!userId) {
+      return res.status(401).json({
+        code: 401,
+        message: 'Unauthorized. Login required.',
+      });
+    }
+
+    // Update the user's role in the database
+    const updateSelectRole = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        role: selectedRole,
+      },
+    });
+
+    // Respond with success message and updated user data
+    return res.status(200).json({
+      code: 200,
+      message: 'User role updated successfully',
+      data: updateSelectRole,
+      success: true,
+    });
+  } catch (error: any) {
+    console.log('@@@ selectionRole error:', error.message || error);
+    return res.status(500).json({
+      code: 500,
+      message: 'Fail to update role',
+    });
   }
 };
