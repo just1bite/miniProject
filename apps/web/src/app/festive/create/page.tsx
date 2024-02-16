@@ -145,7 +145,7 @@ const eventCreate = () => {
             type="number"
             id="seatCount"
             name="seatCount"
-            placeholder="0"
+            placeholder="0.00"
             className="text-white font-bold bg-[#000] border-b-2"
             value={data.seatCount}
             onChange={(e) => setData({ ...data, seatCount: e.target.value })}

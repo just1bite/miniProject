@@ -50,6 +50,7 @@ export const signinUser = async (req: Request, res: Response) => {
     return res.status(200).json({
       code: 200,
       message: 'success',
+      success: true,
       data: user,
     });
   } catch (error: any) {
