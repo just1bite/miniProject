@@ -40,3 +40,4 @@ dist
 apps/api/.env.development
 
 
+apps/api/.env.development
