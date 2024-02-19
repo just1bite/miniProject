@@ -1,15 +1,14 @@
 // src\app\user\account\page.tsx
 'use client';
 import { useState } from 'react';
-// import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 const apiSelectionRole = 'http://localhost:8000/api/auth/selectionRole';
 
 const account = () => {
   const [selectedRole, setSelectedRole] = useState('');
-  // const router = useRouter();
-
+  const router = useRouter();
   const handleRoleSelection = async () => {
     // Make an API call to update the user's role based on selectedRole
     try {
@@ -20,12 +19,13 @@ const account = () => {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
           },
         },
       );
 
       if (response.data.success === true) {
-        // router.push('');
+        router.push('');
       }
     } catch (error) {
       console.log(error);

@@ -5,7 +5,7 @@ import { FormEvent, useState } from 'react';
 
 const apiSignInRoute = 'http://localhost:8000/api/auth/signin';
 
-const SigninUser = () => {
+const SigninPage = () => {
   const [data, setData] = useState({
     email: '',
     password: '',
@@ -21,15 +21,13 @@ const SigninUser = () => {
           'Access-Control-Allow-Origin': '*',
         },
       });
-      console.log('API Response:', response);
-      if (response.data && response.data.success === true) {
-        // Successful sign-in logic
+      console.log('Response Data:', response.data);
+      if (response.data.success === true) {
+        console.log('Before Redirect');
         router.push('/user/account');
-      } else {
-        console.error('Failed to sign in:', response.data);
       }
     } catch (error) {
-      console.error('Error during sign-in:', error);
+      console.error('Error:', error);
     }
   };
 
@@ -89,7 +87,7 @@ const SigninUser = () => {
             Sign in
           </button>
           <div className="text-center">
-            <a href="javascript:void(0)" className="hover:text-indigo-600">
+            <a href="/user/signup" className="hover:text-indigo-600">
               Forgot password?
             </a>
           </div>
@@ -99,4 +97,4 @@ const SigninUser = () => {
   );
 };
 
-export default SigninUser;
+export default SigninPage;

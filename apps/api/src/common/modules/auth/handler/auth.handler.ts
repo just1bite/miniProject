@@ -51,6 +51,7 @@ export const signinUser = async (req: Request, res: Response) => {
       code: 200,
       message: 'success',
       data: user,
+      success: true,
     });
   } catch (error: any) {
     console.log(error);
