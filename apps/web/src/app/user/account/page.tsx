@@ -8,6 +8,9 @@ const apiSelectionRole = 'http://localhost:8000/api/auth/selectionRole';
 
 const accountPage = () => {
   const [selectedRole, setSelectedRole] = useState('');
+  const [userButtonSelected, setUserButtonSelected] = useState(false);
+  const [eventOrganizerButtonSelected, setEventOrganizerButtonSelected] =
+    useState(false);
   // const router = useRouter();
 
   const handleRoleSelection = async () => {
@@ -38,14 +41,28 @@ const accountPage = () => {
         <h2 className="text-2xl font-bold mb-4">Select Your Role</h2>
         <div className="flex justify-center space-x-4">
           <button
-            onClick={() => setSelectedRole('user')}
-            className="border p-4 rounded-md hover:bg-gray-200"
+            onClick={() => {
+              setSelectedRole('user');
+              setUserButtonSelected(true);
+              setEventOrganizerButtonSelected(false);
+            }}
+            className={`border p-4 rounded-md ${
+              userButtonSelected ? 'border-blue-500' : 'hover:bg-gray-200'
+            }`}
           >
             User
           </button>
           <button
-            onClick={() => setSelectedRole('eventOrganizer')}
-            className="border p-4 rounded-md hover:bg-gray-200"
+            onClick={() => {
+              setSelectedRole('eventOrganizer');
+              setEventOrganizerButtonSelected(true);
+              setUserButtonSelected(false);
+            }}
+            className={`border p-4 rounded-md ${
+              eventOrganizerButtonSelected
+                ? 'border-blue-500'
+                : 'hover:bg-gray-200'
+            }`}
           >
             Event Organizer
           </button>
