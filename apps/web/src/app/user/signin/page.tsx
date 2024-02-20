@@ -1,7 +1,7 @@
 'use client';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, useEffect } from 'react';
 
 const apiSignInRoute = 'http://localhost:8000/api/auth/signin';
 
@@ -11,6 +11,36 @@ const SigninPage = () => {
     password: '',
   });
   const router = useRouter();
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const response = await axios.get(
+          'http://localhost:8000/api/auth/user-role',
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          },
+        );
+
+        const userRole = response.data.role;
+
+        if (userRole === null) {
+          router.push('/user/account');
+        } else {
+          router.push('/festive/dashboard');
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error);
+      }
+    };
+
+    checkUserRole();
+  }, []);
+
   const signInUser = async (e: FormEvent) => {
     e.preventDefault();
     try {
@@ -24,7 +54,7 @@ const SigninPage = () => {
       console.log('Response Data:', response.data);
       if (response.data.success === true) {
         console.log('Before Redirect');
-        router.push('/user/account');
+        router.push('/festive/dashboard');
       }
     } catch (error) {
       console.error('Error:', error);

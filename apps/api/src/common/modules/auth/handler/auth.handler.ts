@@ -6,7 +6,7 @@ import { generateToken } from '@/common/helper/jwt.helper';
 import { generateReferral } from '@/common/helper/referral.helper';
 import prisma from '@/prisma';
 import jwt from 'jsonwebtoken';
-import Cookies from 'js-cookie';
+// import Cookies from 'js-cookie';
 
 export const signinUser = async (req: Request, res: Response) => {
   try {
@@ -52,7 +52,6 @@ export const signinUser = async (req: Request, res: Response) => {
       message: 'success',
       success: true,
       data: user,
-      success: true,
     });
   } catch (error: any) {
     console.log(error);

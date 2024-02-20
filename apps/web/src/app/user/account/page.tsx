@@ -6,7 +6,7 @@ import axios from 'axios';
 
 const apiSelectionRole = 'http://localhost:8000/api/auth/selectionRole';
 
-const account = () => {
+const accountPage = () => {
   const [selectedRole, setSelectedRole] = useState('');
   // const router = useRouter();
 
