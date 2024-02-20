@@ -1,21 +1,19 @@
-// src\app\user\account\page.tsx
 'use client';
 import { useState } from 'react';
-// import { useRouter } from 'next/router';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 const apiSelectionRole = 'http://localhost:8000/api/auth/selectionRole';
 
-const account = () => {
+const Account = () => {
   const [selectedRole, setSelectedRole] = useState('');
-  // const router = useRouter();
+  const router = useRouter();
 
   const handleRoleSelection = async () => {
-    // Make an API call to update the user's role based on selectedRole
     try {
       const response = await axios.post(
         apiSelectionRole,
-        { selectedRole }, // Wrap the selectedRole in an object
+        { selectedRole },
         {
           withCredentials: true,
           headers: {
@@ -25,7 +23,7 @@ const account = () => {
       );
 
       if (response.data.success === true) {
-        // router.push('');
+        router.push('/dashboard');
       }
     } catch (error) {
       console.log(error);
@@ -39,13 +37,21 @@ const account = () => {
         <div className="flex justify-center space-x-4">
           <button
             onClick={() => setSelectedRole('user')}
-            className="border p-4 rounded-md hover:bg-gray-200"
+            className={`border p-4 rounded-md ${
+              selectedRole === 'user'
+                ? 'bg-indigo-600 text-white'
+                : 'hover:bg-gray-200'
+            }`}
           >
             User
           </button>
           <button
             onClick={() => setSelectedRole('eventOrganizer')}
-            className="border p-4 rounded-md hover:bg-gray-200"
+            className={`border p-4 rounded-md ${
+              selectedRole === 'eventOrganizer'
+                ? 'bg-indigo-600 text-white'
+                : 'hover:bg-gray-200'
+            }`}
           >
             Event Organizer
           </button>
@@ -61,4 +67,4 @@ const account = () => {
   );
 };
 
-export default accountPage;
+export default Account;
