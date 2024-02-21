@@ -1,24 +1,29 @@
 // src\app\user\account\page.tsx
 'use client';
 import { useState } from 'react';
-// import { useRouter } from 'next/router';
-import axios from 'axios';
 
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+// Define the API endpoint
 const apiSelectionRole = 'http://localhost:8000/api/auth/selectionRole';
 
-const accountPage = () => {
+// Define the functional component
+const AccountPage = () => {
+  // Initialize the router
+  const router = useRouter();
+  // Initialize state variables
   const [selectedRole, setSelectedRole] = useState('');
   const [userButtonSelected, setUserButtonSelected] = useState(false);
   const [eventOrganizerButtonSelected, setEventOrganizerButtonSelected] =
     useState(false);
-  // const router = useRouter();
 
+  // Handle the role selection logic
   const handleRoleSelection = async () => {
-    // Make an API call to update the user's role based on selectedRole
     try {
+      // Make an API call to update the user's role based on selectedRole
       const response = await axios.post(
         apiSelectionRole,
-        { selectedRole }, // Wrap the selectedRole in an object
+        { selectedRole },
         {
           withCredentials: true,
           headers: {
@@ -27,11 +32,12 @@ const accountPage = () => {
         },
       );
 
+      // Check the success response and navigate to /festive/dashboard
       if (response.data.success === true) {
-        // router.push('');
+        router.push('/festive/dashboard');
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -78,4 +84,4 @@ const accountPage = () => {
   );
 };
 
-export default accountPage;
+export default AccountPage;

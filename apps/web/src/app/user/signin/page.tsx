@@ -12,52 +12,60 @@ const SigninPage = () => {
   });
   const router = useRouter();
 
-  useEffect(() => {
-    const checkUserRole = async () => {
-      try {
-        const response = await axios.get(
-          'http://localhost:8000/api/auth/user-role',
-          {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-            },
+  const checkUserRole = async (id: string) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8000/api/auth/userRole/${id}`,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
           },
-        );
+        },
+      );
+      console.log('Response Data:', response.data);
 
-        const userRole = response.data.role;
-
-        if (userRole === null) {
-          router.push('/user/account');
-        } else {
-          router.push('/festive/dashboard');
-        }
-      } catch (error) {
-        console.error('Error checking user role:', error);
+      const userRole = response.data.data?.role;
+      if (userRole === null) {
+        console.log('Redirecting to /user/account');
+        router.push('/user/account');
+      } else {
+        console.log('Redirecting to /festive/dashboard');
+        router.push('/festive/dashboard');
       }
-    };
+    } catch (error) {
+      console.error('Error checking user role:', error);
+    }
+  };
 
-    checkUserRole();
-  }, []);
-
+  const [loading, setLoading] = useState(false);
   const signInUser = async (e: FormEvent) => {
     e.preventDefault();
     try {
+      setLoading(true);
       const response = await axios.post(apiSignInRoute, data, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
         },
       });
-      console.log('Response Data:', response.data);
+
       if (response.data.success === true) {
+        // Assuming the API response includes the user ID
+        const userId = response.data.data.id.toString();
+
+        // Check the user role after successful sign-in
+        await checkUserRole(userId); // await to ensure the checkUserRole completes before redirection
+
         console.log('Before Redirect');
-        router.push('/festive/dashboard');
+        // Note: Redirecting after the role check
+      } else {
+        console.error('Login failed:', response.data.message);
       }
     } catch (error) {
       console.error('Error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -301,8 +301,8 @@ export const selectionRole = async (req: Request, res: Response) => {
     };
 
     // Get user ID from the token
-    const userId = getUserIdFromToken(userToken);
-    if (!userId) {
+    const userRole = getUserIdFromToken(userToken);
+    if (!userRole) {
       return res.status(401).json({
         code: 401,
         message: 'Unauthorized. Login required.',
@@ -312,7 +312,7 @@ export const selectionRole = async (req: Request, res: Response) => {
     // Update the user's role in the database
     const updateSelectRole = await prisma.user.update({
       where: {
-        id: userId,
+        id: userRole,
       },
       data: {
         role: selectedRole,
@@ -331,6 +331,47 @@ export const selectionRole = async (req: Request, res: Response) => {
     return res.status(500).json({
       code: 500,
       message: 'Fail to update role',
+    });
+  }
+};
+
+export const userRole = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const parsedId = parseInt(id);
+    if (!parsedId || isNaN(parsedId)) {
+      return res.status(400).json({
+        code: 400,
+        message: 'Invalid ID params',
+      });
+    }
+
+    const getUser = await prisma.user.findFirst({
+      where: {
+        id: parsedId,
+      },
+    });
+
+    console.log('getUserRoleById Result:', getUser);
+    if (!getUser) {
+      return res.status(404).json({
+        code: 404,
+        message: `User with id ${parsedId} not found`,
+      });
+    }
+
+    return res.status(200).json({
+      code: 200,
+      message: 'Success',
+      data: getUser,
+      success: true,
+    });
+  } catch (error: any) {
+    console.log('@@@ getEvent error:', error.message || error);
+    return res.status(500).json({
+      code: 500,
+      message: 'Internal Server Error',
     });
   }
 };
